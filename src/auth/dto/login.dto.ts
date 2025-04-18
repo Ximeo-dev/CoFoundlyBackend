@@ -1,0 +1,27 @@
+import {
+	IsIn,
+	IsNotEmpty,
+	IsString,
+	Matches,
+	MaxLength,
+	MinLength,
+} from 'class-validator'
+
+export class LoginDto {
+	@IsString()
+	@IsIn(['username', 'email'])
+	type: 'username' | 'email'
+
+	@IsString()
+	@IsNotEmpty()
+	identifier: string
+
+	@MinLength(8, {
+		message: 'Пароль должен состоять минимум из 8 символов',
+	})
+	@MaxLength(128, {
+		message: 'Длина пароля не должна превышать 128 символов',
+	})
+	@IsString()
+	password: string
+}

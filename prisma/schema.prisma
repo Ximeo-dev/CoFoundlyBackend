@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String            @id @default(uuid()) @db.Uuid
+  email            String            @unique
+  name             String
+  bio              String?
+  status           Status            @default(OPEN)
+  timezone         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  BlogPost         BlogPost[]
+  Idea             Idea[]
+  matches          Match[]           @relation("UserMatches")
+  Message          Message[]
+  OAuthAccount     OAuthAccount[]
+  projectsOwned    Project[]         @relation("UserProjects")
+  securitySettings SecuritySettings?
+  Subscription     Subscription[]
+  skills           UserSkill[]
+  Chat             Chat[]            @relation("ChatParticipants")
+  interests        Interest[]        @relation("InterestToUser")
+  projectsJoined   Project[]         @relation("ProjectMembers")
+}
+
+model Skill {
+  id    Int         @id @default(autoincrement())
+  name  String
+  users UserSkill[]
+}
+
+model UserSkill {
+  userId  String @db.Uuid
+  skillId Int
+  skill   Skill  @relation(fields: [skillId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@id([userId, skillId])
+}
+
+model Interest {
+  id   Int          @id @default(autoincrement())
+  type InterestType
+  User User[]       @relation("InterestToUser")
+}
+
+model SecuritySettings {
+  id               Int     @id @default(autoincrement())
+  userId           String  @unique @db.Uuid
+  twoFactorEnabled Boolean @default(false)
+  passwordHash     String
+  user             User    @relation(fields: [userId], references: [id])
+}
+
+model Project {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String
+  ownerId     String        @db.Uuid
+  status      ProjectStatus
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Idea        Idea[]
+  Match       Match[]
+  owner       User          @relation("UserProjects", fields: [ownerId], references: [id])
+  teamMembers User[]        @relation("ProjectMembers")
+}
+
+model Match {
+  id          Int         @id @default(autoincrement())
+  userId      String      @db.Uuid
+  projectId   Int
+  matchStatus MatchStatus
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  project     Project     @relation(fields: [projectId], references: [id])
+  user        User        @relation("UserMatches", fields: [userId], references: [id])
+
+  @@index([userId, projectId])
+}
+
+model Idea {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  ownerId     String   @db.Uuid
+  projectId   Int
+  likes       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  owner       User     @relation(fields: [ownerId], references: [id])
+  project     Project  @relation(fields: [projectId], references: [id])
+}
+
+model BlogPost {
+  id         Int       @id @default(autoincrement())
+  title      String
+  content    String
+  categoryId Int?
+  authorId   String    @db.Uuid
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  author     User      @relation(fields: [authorId], references: [id])
+  category   Category? @relation(fields: [categoryId], references: [id])
+  tags       Tag[]     @relation("BlogPostTags")
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  blogPosts BlogPost[]
+}
+
+model Tag {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  blogPosts BlogPost[] @relation("BlogPostTags")
+}
+
+model Chat {
+  id           Int       @id @default(autoincrement())
+  type         ChatType  @default(DIRECT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[]
+  participants User[]    @relation("ChatParticipants")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chatId    Int
+  senderId  String   @db.Uuid
+  content   String
+  sentAt    DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+
+  @@index([senderId, chatId])
+}
+
+model PricingPlan {
+  id           Int            @id @default(autoincrement())
+  name         String
+  description  String
+  features     String
+  price        Float
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Subscription Subscription[]
+}
+
+model Subscription {
+  id          Int         @id @default(autoincrement())
+  userId      String      @db.Uuid
+  planId      Int
+  startedAt   DateTime    @default(now())
+  endsAt      DateTime
+  isActive    Boolean
+  isAutoRenew Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  plan        PricingPlan @relation(fields: [planId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+}
+
+model OAuthAccount {
+  id                Int     @id @default(autoincrement())
+  provider          String
+  providerAccountId String
+  userId            String  @db.Uuid
+  accessToken       String?
+  refreshToken      String?
+  user              User    @relation(fields: [userId], references: [id])
+}
+
+enum InterestType {
+  FIND_PROJECT
+  FIND_PEOPLE
+  HAVE_PROJECT
+}
+
+enum Status {
+  OPEN
+  BUSY
+}
+
+enum ProjectStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+}
+
+enum MatchStatus {
+  ACCEPTED
+  REJECTED
+  PENDING
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+}
