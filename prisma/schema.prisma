@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String      @id @default(uuid()) @db.Uuid
+  email            String      @unique
+  name             String
+  bio              String?
+  timezone         String?
+  status           Status      @default(OPEN)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  skills           UserSkill[]
+  interests        Interest[]
+  securitySettings SecuritySettings?
+  matches          Match[]     @relation("UserMatches")
+  projectsOwned    Project[]   @relation("UserProjects")
+  projectsJoined   Project[]   @relation("ProjectMembers")
+  Idea             Idea[]
+  BlogPost         BlogPost[]
+  Chat             Chat[]      @relation("ChatParticipants")
+  Message          Message[]
+  Subscription     Subscription[]
+  OAuthAccount     OAuthAccount[]
+}
+
+model Skill {
+  id       Int         @id @default(autoincrement())
+  name     String
+  users    UserSkill[]
+}
+
+model UserSkill {
+  userId   String   @db.Uuid
+  skillId  Int
+
+  user     User     @relation(fields: [userId], references: [id])
+  skill    Skill    @relation(fields: [skillId], references: [id])
+
+  @@id([userId, skillId])
+}
+
+model Interest {
+  id       Int            @id @default(autoincrement())
+  type     InterestType
+  User     User[]
+}
+
+enum InterestType {
+  FIND_PROJECT
+  FIND_PEOPLE
+  HAVE_PROJECT
+}
+
+enum Status {
+  OPEN
+  BUSY
+}
+
+model SecuritySettings {
+  id               Int      @id @default(autoincrement())
+  userId           String   @db.Uuid @unique
+  user             User     @relation(fields: [userId], references: [id])
+  twoFactorEnabled Boolean  @default(false)
+  passwordHash     String
+}
+
+model Project {
+  id               Int         @id @default(autoincrement())
+  name             String
+  description      String
+  ownerId          String      @db.Uuid
+  status           ProjectStatus
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  owner            User        @relation("UserProjects", fields: [ownerId], references: [id])
+  teamMembers      User[]      @relation("ProjectMembers")
+  Match            Match[]
+  Idea             Idea[]
+}
+
+enum ProjectStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+}
+
+model Match {
+  id               Int       @id @default(autoincrement())
+  userId           String    @db.Uuid
+  projectId        Int
+  matchStatus      MatchStatus
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation("UserMatches", fields: [userId], references: [id])
+  project          Project   @relation(fields: [projectId], references: [id])
+
+  @@index([userId, projectId])
+}
+
+enum MatchStatus {
+  ACCEPTED
+  REJECTED
+  PENDING
+}
+
+model Idea {
+  id               Int         @id @default(autoincrement())
+  title            String
+  description      String
+  ownerId          String      @db.Uuid
+  projectId        Int
+  likes            Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  owner            User        @relation(fields: [ownerId], references: [id])
+  project          Project?    @relation(fields: [projectId], references: [id])
+}
+
+model BlogPost {
+  id               Int         @id @default(autoincrement())
+  title            String
+  content          String
+  categoryId       Int?
+  authorId         String      @db.Uuid
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  category         Category?   @relation(fields: [categoryId], references: [id])
+  tags             Tag[]       @relation("BlogPostTags")
+  author           User        @relation(fields: [authorId], references: [id])
+}
+
+model Category {
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  blogPosts  BlogPost[]
+}
+
+model Tag {
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  blogPosts  BlogPost[]  @relation("BlogPostTags")
+}
+
+enum ChatType { 
+  DIRECT
+  GROUP
+}
+
+model Chat {
+  id               Int         @id @default(autoincrement())
+  type             ChatType    @default(DIRECT)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  participants     User[]      @relation("ChatParticipants")
+  messages         Message[]
+}
+
+model Message {
+  id               Int         @id @default(autoincrement())
+  chatId           Int
+  senderId         String      @db.Uuid
+  content          String
+  sentAt           DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  chat             Chat        @relation(fields: [chatId], references: [id])
+  sender           User        @relation(fields: [senderId], references: [id])
+
+  @@index([senderId, chatId])
+}
+
+model PricingPlan {
+  id               Int         @id @default(autoincrement())
+  name             String
+  description      String
+  features         String
+  price            Float
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  Subscription     Subscription[]
+}
+
+model Subscription {
+  id               Int         @id @default(autoincrement())
+  userId           String      @db.Uuid
+  planId           Int
+  startedAt        DateTime    @default(now())
+  endsAt           DateTime
+  isActive         Boolean
+  isAutoRenew      Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  user             User        @relation(fields: [userId], references: [id])
+  plan             PricingPlan @relation(fields: [planId], references: [id])
+}
+
+model OAuthAccount {
+  id                 Int      @id @default(autoincrement())
+  provider           String
+  providerAccountId  String
+  userId             String   @db.Uuid
+  accessToken        String?
+  refreshToken       String?
+
+  user               User     @relation(fields: [userId], references: [id])
+}

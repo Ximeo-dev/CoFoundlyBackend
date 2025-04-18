@@ -18,7 +18,7 @@ async function bootstrap() {
 		exposedHeaders: 'set-cookie',
 		origin: [
 			'http://localhost:3000',
-			// ?
+			'https://cofoundly.infinitum.su',
 		],
 	})
 
