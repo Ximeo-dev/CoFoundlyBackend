@@ -1,4 +1,5 @@
 import {
+	IsEmail,
 	IsIn,
 	IsNotEmpty,
 	IsString,
@@ -8,13 +9,9 @@ import {
 } from 'class-validator'
 
 export class LoginDto {
-	@IsString()
-	@IsIn(['username', 'email'])
-	type: 'username' | 'email'
-
-	@IsString()
+	@IsEmail()
 	@IsNotEmpty()
-	identifier: string
+	email: string
 
 	@MinLength(8, {
 		message: 'Пароль должен состоять минимум из 8 символов',

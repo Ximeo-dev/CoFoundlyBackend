@@ -14,6 +14,7 @@ model User {
   bio              String?
   status           Status            @default(OPEN)
   timezone         String?
+  role             UserRole          @default(USER)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   BlogPost         BlogPost[]
@@ -28,6 +29,12 @@ model User {
   Chat             Chat[]            @relation("ChatParticipants")
   interests        Interest[]        @relation("InterestToUser")
   projectsJoined   Project[]         @relation("ProjectMembers")
+}
+
+enum UserRole {
+  ADMIN
+  CONTENT
+  USER
 }
 
 model Skill {

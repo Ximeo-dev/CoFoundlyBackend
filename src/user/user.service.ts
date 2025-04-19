@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { User } from '@prisma/client'
 import { hash } from 'argon2'
 import { RegisterDto } from 'src/auth/dto/register.dto'
 import { PrismaService } from 'src/prisma.service'
@@ -20,6 +21,15 @@ export class UserService {
 			where: {
 				email: email.toLowerCase(),
 			},
+		})
+	}
+
+	async getByEmailWithSecuritySettings(email: string) {
+		return this.prisma.user.findUnique({
+			where: {
+				email: email.toLowerCase(),
+			},
+			include: { securitySettings: true },
 		})
 	}
 
