@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { User } from '@prisma/client'
 import { hash } from 'argon2'
 import { RegisterDto } from 'src/auth/dto/register.dto'
 import { PrismaService } from 'src/prisma.service'
@@ -23,6 +24,15 @@ export class UserService {
 		})
 	}
 
+	async getByEmailWithSecuritySettings(email: string) {
+		return this.prisma.user.findUnique({
+			where: {
+				email: email.toLowerCase(),
+			},
+			include: { securitySettings: true },
+		})
+	}
+
 	async create(dto: RegisterDto) {
 		const passwordHash = await hash(dto.password)
 
@@ -39,5 +49,15 @@ export class UserService {
 					: undefined,
 			},
 		})
+	}
+
+	async getUserProfile(id: string) {
+		const user = await this.getById(id)
+
+		if (!user) throw new NotFoundException(`Invalid user`)
+
+		const { role, updatedAt, ...data } = user
+
+		return data
 	}
 }
