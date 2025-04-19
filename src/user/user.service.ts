@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { User } from '@prisma/client'
 import { hash } from 'argon2'
 import { RegisterDto } from 'src/auth/dto/register.dto'
@@ -49,5 +49,15 @@ export class UserService {
 					: undefined,
 			},
 		})
+	}
+
+	async getUserProfile(id: string) {
+		const user = await this.getById(id)
+
+		if (!user) throw new NotFoundException(`Invalid user`)
+
+		const { role, updatedAt, ...data } = user
+
+		return data
 	}
 }
