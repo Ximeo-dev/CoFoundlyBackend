@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { User } from '@prisma/client'
 import { hash } from 'argon2'
 import { RegisterDto } from 'src/auth/dto/register.dto'
 import { PrismaService } from 'src/prisma.service'
@@ -13,6 +12,15 @@ export class UserService {
 			where: {
 				id,
 			},
+		})
+	}
+
+	async getByIdWithSecuritySettings(id: string) {
+		return this.prisma.user.findUnique({
+			where: {
+				id,
+			},
+			include: { securitySettings: true },
 		})
 	}
 
@@ -48,6 +56,9 @@ export class UserService {
 						}
 					: undefined,
 			},
+			include: {
+				securitySettings: true,
+			},
 		})
 	}
 
@@ -59,5 +70,70 @@ export class UserService {
 		const { role, updatedAt, ...data } = user
 
 		return data
+	}
+
+	async setEmailConfirmationToken(userId: string, token: string) {
+		await this.prisma.securitySettings.update({
+			where: {
+				userId,
+			},
+			data: {
+				emailConfirmationToken: token,
+			},
+		})
+	}
+
+	async setConfirmedEmailStatus(userId: string, status: boolean) {
+		await this.prisma.securitySettings.update({
+			where: {
+				userId,
+			},
+			data: {
+				isEmailConfirmed: status,
+			},
+		})
+	}
+
+	async setResetPasswordToken(userId: string, token: string) {
+		await this.prisma.securitySettings.update({
+			where: {
+				userId,
+			},
+			data: {
+				resetPasswordToken: token,
+			},
+		})
+	}
+
+	async setPassword(userId: string, password: string) {
+		await this.prisma.securitySettings.update({
+			where: { userId },
+			data: { passwordHash: await hash(password) },
+		})
+	}
+
+	async invalidateTokens(userId: string) {
+		await this.prisma.securitySettings.update({
+			where: { userId },
+			data: { jwtTokenVersion: { increment: 1 } },
+		})
+	}
+
+	async setChangeEmailToken(userId: string, token: string) {
+		await this.prisma.securitySettings.update({
+			where: {
+				userId,
+			},
+			data: {
+				changeEmailToken: token,
+			},
+		})
+	}
+
+	async changeEmail(userId: string, email: string) {
+		await this.prisma.user.update({
+			where: { id: userId },
+			data: { email },
+		})
 	}
 }

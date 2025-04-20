@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Подтверждение смены эл. почты</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#000000; font-family:Segoe UI, sans-serif; color:#ffffff;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000">
+      <tr>
+        <td align="center" style="padding: 40px 20px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; background-color:#0d0d0d; border-radius:12px;">
+            <tr>
+              <td style="padding: 40px 30px; text-align: center;">
+                <h1 style="font-size: 28px; margin: 0 0 10px; color: #ffffff;">CoFoundly</h1>
+                <h2 style="font-size: 18px; font-weight: normal; margin: 0 0 30px; color: #cccccc;">Подтверждение смены эл. почты</h2>
+
+                <p style="font-size: 16px; line-height: 1.6; margin: 0 0 20px; color: #dddddd;">
+                  Кто-то запросил смену адреса электронной почты на
+                  <strong style="color: #ffffff;">{{ newEmail }}</strong> для аккаунта
+                  <strong style="color: #ffffff;">{{ oldEmail }}</strong>.
+                  Если это были не вы — просто проигнорируйте письмо.
+                </p>
+
+                <p style="font-size: 16px; line-height: 1.6; margin: 0 0 30px; color: #dddddd;">
+                  Для подтверждения смены почты нажмите кнопку ниже или перейдите по <a href="{{ confirmationUrl }}" style="color:#ffffff; text-decoration:underline;">ссылке</a>.
+                </p>
+
+                <table cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 0 auto 30px;">
+                  <tr>
+                    <td align="center" bgcolor="#ffffff" style="border-radius: 8px;">
+                      <a href="{{ confirmationUrl }}"
+                        style="display: inline-block; padding: 14px 28px; font-size: 16px; color: #000000; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                        Подтвердить
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+				<p style="font-size: 14px; line-height: 1.5; color: #888888; margin: 20px 0 0;">
+					С уважением, команда CoFoundly
+				</p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="font-size: 12px; color: #555555; margin-top: 20px;">
+            © 2025 CoFoundly. Все права защищены.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

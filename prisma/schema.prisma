@@ -63,6 +63,11 @@ model SecuritySettings {
   userId           String  @unique @db.Uuid
   twoFactorEnabled Boolean @default(false)
   passwordHash     String
+  isEmailConfirmed Boolean @default(false)
+  emailConfirmationToken String?
+  changeEmailToken String?
+  resetPasswordToken String?
+  jwtTokenVersion Int @default(0)
   user             User    @relation(fields: [userId], references: [id])
 }
 

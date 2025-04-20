@@ -24,18 +24,18 @@ export class AuthService {
 	) {}
 
 	async login(dto: LoginDto) {
-		const validatedUser = await this.validateUser(dto)
+		const { user, securitySettings } = await this.validateUser(dto)
 
-		const tokens = this.issueTokens(validatedUser.id)
+		const tokens = this.issueTokens(user.id, securitySettings.jwtTokenVersion)
 
 		return {
-			validatedUser,
+			user,
 			...tokens,
 		}
 	}
 
-	private issueTokens(userId: string) {
-		const data = { id: userId }
+	private issueTokens(userId: string, tokenVersion: number) {
+		const data = { id: userId, version: tokenVersion }
 
 		const accessToken = this.jwt.sign(data, {
 			expiresIn: '3h',
@@ -57,14 +57,14 @@ export class AuthService {
 
 		const { securitySettings, ...user } = userWithSecurity
 
-		const isValid = await verify(
-			securitySettings.passwordHash,
-			dto.password,
-		)
+		const isValid = await verify(securitySettings.passwordHash, dto.password)
 
 		if (!isValid) throw new UnauthorizedException('Неверный логин или пароль')
 
-		return user
+		return {
+			user,
+			securitySettings,
+		}
 	}
 
 	async register(dto: RegisterDto) {
@@ -78,9 +78,14 @@ export class AuthService {
 		if (result.score <= 1)
 			throw new BadRequestException('Пароль слишком простой')
 
-		const user = await this.userService.create(dto)
+		const { securitySettings, ...user } = await this.userService.create(dto)
 
-		const tokens = this.issueTokens(user.id)
+		if (!securitySettings)
+			throw new BadRequestException(
+				'Во время регистрации возникла ошибка. Попробуйте позже',
+			)
+
+		const tokens = this.issueTokens(user.id, securitySettings.jwtTokenVersion)
 
 		return {
 			user,
@@ -138,14 +143,17 @@ export class AuthService {
 				throw new UnauthorizedException('Invalid refresh token')
 			}
 
-			const user = await this.userService.getById(result.id)
+			const user = await this.userService.getByIdWithSecuritySettings(result.id)
 
-			if (!user) throw new UnauthorizedException('Invalid user')
+			if (!user || !user.securitySettings)
+				throw new UnauthorizedException('Invalid user')
 
-			const tokens = this.issueTokens(user.id)
+			const { securitySettings, ...userData } = user
+
+			const tokens = this.issueTokens(user.id, securitySettings.jwtTokenVersion)
 
 			return {
-				user,
+				userData,
 				...tokens,
 			}
 		} catch (e) {
