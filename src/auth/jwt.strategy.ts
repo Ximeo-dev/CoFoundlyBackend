@@ -17,22 +17,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 		})
 	}
 
-	// validate with token version
-	// async validate({ id, version }: { id: string; version: number }) {
-	// 	const user = await this.userService.getById(id)
+	async validate({ id, version }: { id: string; version: number }) {
+		const user = await this.userService.getByIdWithSecuritySettings(id)
 
-	// 	if (!user || user.jwtTokenVersion !== version) {
-	// 		throw new UnauthorizedException('Token is invalid or expired')
-	// 	}
-
-	// 	return user
-	// }
-
-	async validate({ id }: { id: string }) {
-		const user = await this.userService.getById(id)
-
-		if (!user) {
-			throw new UnauthorizedException('Token is invalid')
+		if (!user || user.securitySettings?.jwtTokenVersion !== version) {
+			throw new UnauthorizedException('Token is invalid or expired')
 		}
 
 		return user
