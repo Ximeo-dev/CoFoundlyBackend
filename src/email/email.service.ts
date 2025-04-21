@@ -1,6 +1,7 @@
 import {
 	BadRequestException,
 	Injectable,
+	InternalServerErrorException,
 	NotFoundException,
 } from '@nestjs/common'
 import { JwtService, TokenExpiredError } from '@nestjs/jwt'
@@ -13,6 +14,7 @@ import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 import { fillHtmlTemplate } from 'src/utils/fillHtmlTemplate'
 import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
+import * as zxcvbn from 'zxcvbn'
 
 interface ITokenPayload {
 	id: string
@@ -23,8 +25,8 @@ interface ITokenPayload {
 export class EmailService {
 	private transporter = nodemailer.createTransport({
 		host: getEnvVar('EMAIL_HOST'),
-		port: 587,
-		secure: false,
+		port: getEnvVar('EMAIL_PORT'),
+		secure: getEnvVar('EMAIL_SECURE'),
 		auth: {
 			user: getEnvVar('EMAIL_USER'),
 			pass: getEnvVar('EMAIL_PASS'),
@@ -120,7 +122,10 @@ export class EmailService {
 			getEnvVar('EMAIL_CONFIRMATION_MESSAGE_FILE'),
 		)
 
-		if (!template) return
+		if (!template)
+			throw new InternalServerErrorException(
+				'Произошла ошибка во время отправки подтверждения',
+			)
 
 		this.transporter
 			.sendMail({
@@ -168,7 +173,10 @@ export class EmailService {
 			getEnvVar('RESET_PASSWORD_CONFIRMATION_MESSAGE_FILE'),
 		)
 
-		if (!template) return
+		if (!template)
+			throw new InternalServerErrorException(
+				'Произошла ошибка во время отправки подтверждения',
+			)
 
 		this.transporter
 			.sendMail({
@@ -186,6 +194,11 @@ export class EmailService {
 		if (!user) {
 			throw new NotFoundException('Пользователь не найден')
 		}
+
+		const result = zxcvbn(dto.password)
+
+		if (result.score <= 1)
+			throw new BadRequestException('Пароль слишком простой')
 
 		await this.userService.setPassword(user.id, dto.password)
 		await this.userService.invalidateTokens(user.id)
@@ -225,11 +238,14 @@ export class EmailService {
 			getEnvVar('CHANGE_EMAIL_CONFIRMATION_MESSAGE_FILE'),
 		)
 
-		if (!template) return
+		if (!template)
+			throw new InternalServerErrorException(
+				'Произошла ошибка во время отправки подтверждения',
+			)
 
 		this.transporter
 			.sendMail({
-				from: `"Infinitum" <${getEnvVar('EMAIL_USER')}>`,
+				from: `"CoFoundly" <${getEnvVar('EMAIL_USER')}>`,
 				to: dto.newEmail,
 				subject: 'Подтверждение смены эл. почты',
 				html: fillHtmlTemplate(template, variables),
