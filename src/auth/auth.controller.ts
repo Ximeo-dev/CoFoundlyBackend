@@ -15,12 +15,18 @@ import { LoginDto } from './dto/login.dto'
 import { Request, Response } from 'express'
 import { EmailAvailableDto, RegisterDto } from './dto/register.dto'
 import { UserService } from 'src/user/user.service'
+import {
+	ResetPasswordConfirmDto,
+	ResetPasswordRequestDto,
+} from './dto/reset-password.dto'
+import { EmailService } from 'src/email/email.service'
 
 @Controller('auth')
 export class AuthController {
 	constructor(
 		private readonly authService: AuthService,
 		private readonly userService: UserService,
+		private readonly emailService: EmailService,
 	) {}
 
 	@UsePipes(new ValidationPipe())
@@ -100,5 +106,26 @@ export class AuthController {
 
 		if (!user) return true
 		return false
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Post('reset-password')
+	async resetPasswordRequest(@Body() dto: ResetPasswordRequestDto) {
+		await this.emailService.sendEmailResetPassword(dto.email)
+
+		return { message: 'Confirmation email sent' }
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Post('reset-password/confirm')
+	async confirmEmail(
+		@Query('token') token: string,
+		@Body() dto: ResetPasswordConfirmDto,
+	) {
+		const payload = await this.emailService.getPayloadFromToken(token)
+		await this.emailService.handleEmailConfirmationToken(token, payload)
+		return this.emailService.confirmResetPassword(payload.id, dto)
 	}
 }

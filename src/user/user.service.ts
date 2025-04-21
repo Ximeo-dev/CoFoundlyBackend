@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
-import { hash } from 'argon2'
+import {
+	BadRequestException,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common'
+import { hash, verify } from 'argon2'
 import { RegisterDto } from 'src/auth/dto/register.dto'
 import { PrismaService } from 'src/prisma.service'
 
@@ -38,6 +42,14 @@ export class UserService {
 				email: email.toLowerCase(),
 			},
 			include: { securitySettings: true },
+		})
+	}
+
+	async getUserSecuritySettingsById(userId: string) {
+		return this.prisma.securitySettings.findUnique({
+			where: {
+				userId,
+			},
 		})
 	}
 
