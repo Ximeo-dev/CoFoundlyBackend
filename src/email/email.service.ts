@@ -116,7 +116,9 @@ export class EmailService {
 			confirmationUrl,
 		}
 
-		const template = await getHtmlTemplate(getEnvVar('EMAIL_CONFIRMATION_MESSAGE_FILE'))
+		const template = await getHtmlTemplate(
+			getEnvVar('EMAIL_CONFIRMATION_MESSAGE_FILE'),
+		)
 
 		if (!template) return
 
@@ -131,7 +133,7 @@ export class EmailService {
 	}
 
 	async confirmEmail(userId: string) {
-		const user = await this.userService.getByEmailWithSecuritySettings(userId)
+		const user = await this.userService.getByIdWithSecuritySettings(userId)
 
 		if (!user || !user.securitySettings) {
 			throw new NotFoundException('Пользователь не найден')
@@ -162,7 +164,9 @@ export class EmailService {
 			confirmationUrl,
 		}
 
-		const template = await getHtmlTemplate(getEnvVar('RESET_PASSWORD_CONFIRMATION_MESSAGE_FILE'))
+		const template = await getHtmlTemplate(
+			getEnvVar('RESET_PASSWORD_CONFIRMATION_MESSAGE_FILE'),
+		)
 
 		if (!template) return
 
@@ -217,7 +221,9 @@ export class EmailService {
 			confirmationUrl,
 		}
 
-		const template = await getHtmlTemplate(getEnvVar('CHANGE_EMAIL_CONFIRMATION_MESSAGE_FILE'))
+		const template = await getHtmlTemplate(
+			getEnvVar('CHANGE_EMAIL_CONFIRMATION_MESSAGE_FILE'),
+		)
 
 		if (!template) return
 
