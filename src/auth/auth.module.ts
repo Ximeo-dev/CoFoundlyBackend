@@ -6,6 +6,7 @@ import { UserModule } from 'src/user/user.module'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { JwtModule } from '@nestjs/jwt'
 import { getJwtConfig } from 'src/config/jwt.config'
+import { EmailModule } from 'src/email/email.module'
 
 @Module({
 	imports: [
@@ -16,6 +17,7 @@ import { getJwtConfig } from 'src/config/jwt.config'
 			inject: [ConfigService],
 			useFactory: getJwtConfig,
 		}),
+		EmailModule,
 	],
 	controllers: [AuthController],
 	providers: [AuthService, JwtStrategy],
