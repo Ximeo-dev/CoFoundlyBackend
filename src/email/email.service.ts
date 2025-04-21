@@ -116,7 +116,7 @@ export class EmailService {
 			confirmationUrl,
 		}
 
-		const template = await getHtmlTemplate('email-confirm')
+		const template = await getHtmlTemplate(getEnvVar('EMAIL_CONFIRMATION_MESSAGE_FILE'))
 
 		if (!template) return
 
@@ -162,7 +162,7 @@ export class EmailService {
 			confirmationUrl,
 		}
 
-		const template = await getHtmlTemplate('reset-password')
+		const template = await getHtmlTemplate(getEnvVar('RESET_PASSWORD_CONFIRMATION_MESSAGE_FILE'))
 
 		if (!template) return
 
@@ -217,7 +217,7 @@ export class EmailService {
 			confirmationUrl,
 		}
 
-		const template = await getHtmlTemplate('change-email-confirm')
+		const template = await getHtmlTemplate(getEnvVar('CHANGE_EMAIL_CONFIRMATION_MESSAGE_FILE'))
 
 		if (!template) return
 
