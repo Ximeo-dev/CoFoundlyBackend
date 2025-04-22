@@ -12,7 +12,6 @@ import { LoginDto } from './dto/login.dto'
 import { Response } from 'express'
 import { getEnvVar } from 'src/utils/env'
 import * as zxcvbn from 'zxcvbn'
-import { ConfigService } from '@nestjs/config'
 import { parseBool } from 'src/utils/parseBool'
 
 @Injectable()
@@ -23,7 +22,6 @@ export class AuthService {
 	constructor(
 		private jwt: JwtService,
 		private userService: UserService,
-		private configService: ConfigService,
 	) {}
 
 	async login(dto: LoginDto) {
