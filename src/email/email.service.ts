@@ -4,6 +4,7 @@ import {
 	InternalServerErrorException,
 	NotFoundException,
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { JwtService, TokenExpiredError } from '@nestjs/jwt'
 import { verify } from 'argon2'
 import * as nodemailer from 'nodemailer'
@@ -14,6 +15,7 @@ import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 import { fillHtmlTemplate } from 'src/utils/fillHtmlTemplate'
 import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
+import { parseBool } from 'src/utils/parseBool'
 import * as zxcvbn from 'zxcvbn'
 
 interface ITokenPayload {
@@ -26,7 +28,7 @@ export class EmailService {
 	private transporter = nodemailer.createTransport({
 		host: getEnvVar('EMAIL_HOST'),
 		port: getEnvVar('EMAIL_PORT'),
-		secure: getEnvVar('EMAIL_SECURE'),
+		secure: parseBool(getEnvVar('EMAIL_SECURE')),
 		auth: {
 			user: getEnvVar('EMAIL_USER'),
 			pass: getEnvVar('EMAIL_PASS'),
@@ -111,7 +113,7 @@ export class EmailService {
 
 		await this.userService.setEmailConfirmationToken(user.id, token)
 
-		const confirmationUrl = `http://${getEnvVar('API')}/confirm-email?token=${token}`
+		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-email?token=${token}`
 
 		const variables = {
 			name: user.name,
@@ -162,7 +164,7 @@ export class EmailService {
 
 		await this.userService.setResetPasswordToken(user.id, token)
 
-		const confirmationUrl = `http://${getEnvVar('FRONTEND')}/reset-password/confirm?token=${token}`
+		const confirmationUrl = `http://${getEnvVar('FRONTEND_URL')}/reset-password/confirm?token=${token}`
 
 		const variables = {
 			email: user.email,
@@ -226,7 +228,7 @@ export class EmailService {
 
 		await this.userService.setChangeEmailToken(user.id, token)
 
-		const confirmationUrl = `http://${getEnvVar('API')}/confirm-change-email?token=${token}`
+		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-change-email?token=${token}`
 
 		const variables = {
 			oldEmail: user.email,
