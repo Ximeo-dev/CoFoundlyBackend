@@ -12,6 +12,8 @@ import { LoginDto } from './dto/login.dto'
 import { Response } from 'express'
 import { getEnvVar } from 'src/utils/env'
 import * as zxcvbn from 'zxcvbn'
+import { ConfigService } from '@nestjs/config'
+import { parseBool } from 'src/utils/parseBool'
 
 @Injectable()
 export class AuthService {
@@ -21,6 +23,7 @@ export class AuthService {
 	constructor(
 		private jwt: JwtService,
 		private userService: UserService,
+		private configService: ConfigService,
 	) {}
 
 	async login(dto: LoginDto) {
@@ -102,7 +105,7 @@ export class AuthService {
 		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
 			httpOnly: true,
 			expires: expiresIn,
-			secure: true,
+			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
 			domain: getEnvVar('DOMAIN'),
 			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
 		})
@@ -111,7 +114,7 @@ export class AuthService {
 		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
 			httpOnly: true,
 			expires: expiresIn,
-			secure: true,
+			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
 			domain: 'localhost',
 			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
 		})
@@ -122,7 +125,7 @@ export class AuthService {
 			httpOnly: true,
 			domain: getEnvVar('DOMAIN'),
 			expires: new Date(0),
-			secure: true,
+			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
 			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
 		})
 		//Для сайта на localhost
@@ -130,7 +133,7 @@ export class AuthService {
 			httpOnly: true,
 			domain: 'localhost',
 			expires: new Date(0),
-			secure: true,
+			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
 			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
 		})
 	}
