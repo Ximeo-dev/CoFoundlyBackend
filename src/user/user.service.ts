@@ -75,7 +75,19 @@ export class UserService {
 	}
 
 	async getUserProfile(id: string) {
-		const user = await this.getById(id)
+		const user = await this.prisma.user.findUnique({
+			where: {
+				id,
+			},
+			include: {
+				securitySettings: {
+					select: {
+						isEmailConfirmed: true,
+						twoFactorEnabled: true,
+					},
+				},
+			},
+		})
 
 		if (!user) throw new NotFoundException(`Invalid user`)
 
