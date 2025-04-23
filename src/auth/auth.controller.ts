@@ -125,7 +125,7 @@ export class AuthController {
 		@Body() dto: ResetPasswordConfirmDto,
 	) {
 		const payload = await this.emailService.getPayloadFromToken(token)
-		await this.emailService.handleEmailConfirmationToken(token, payload)
+		await this.emailService.handleResetPasswordConfirmationToken(token, payload)
 		return this.emailService.confirmResetPassword(payload.id, dto)
 	}
 }
