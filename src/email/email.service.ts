@@ -101,7 +101,7 @@ export class EmailService {
 		const user = await this.userService.getByIdWithSecuritySettings(userId)
 
 		if (!user || !user.securitySettings)
-			throw new BadRequestException('Пользователь не найден')
+			return
 
 		const { securitySettings } = user
 
