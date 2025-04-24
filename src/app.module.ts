@@ -5,6 +5,8 @@ import { ConfigModule } from '@nestjs/config'
 import { AuthModule } from './auth/auth.module'
 import { TelegramModule } from './telegram/telegram.module'
 import { EmailModule } from './email/email.module'
+import { SwipeModule } from './swipe/swipe.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
 	imports: [
@@ -14,7 +16,9 @@ import { EmailModule } from './email/email.module'
 		UserModule,
 		AuthModule,
 		EmailModule,
-		TelegramModule
+		TelegramModule,
+		SwipeModule,
+		ProfileModule
 	],
 	controllers: [AppController],
 })

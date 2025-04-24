@@ -20,10 +20,12 @@ export class UserController {
 		private readonly userService: UserService,
 		private readonly emailService: EmailService,
 	) {}
+
+	@HttpCode(200)
 	@Get()
 	@Auth()
-	async profile(@CurrentUser('id') id: string) {
-		return this.userService.getUserProfile(id)
+	async user(@CurrentUser('id') id: string) {
+		return this.userService.getUserData(id)
 	}
 
 	@UsePipes(new ValidationPipe())
