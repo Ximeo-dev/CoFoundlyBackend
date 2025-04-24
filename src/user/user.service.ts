@@ -74,7 +74,7 @@ export class UserService {
 		})
 	}
 
-	async getUserProfile(id: string) {
+	async getUserData(id: string) {
 		const user = await this.prisma.user.findUnique({
 			where: {
 				id,
@@ -84,6 +84,7 @@ export class UserService {
 					select: {
 						isEmailConfirmed: true,
 						twoFactorEnabled: true,
+						telegramId: true,
 					},
 				},
 			},

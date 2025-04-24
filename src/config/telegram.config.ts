@@ -7,5 +7,5 @@ export const getTelegramConfig = async (
 	token: configService.getOrThrow<string>('TELEGRAM_BOT_TOKEN'),
 	pollingOptions: {
 		drop_pending_updates: true,
-	},
+	}
 })

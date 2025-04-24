@@ -13,7 +13,6 @@ model User {
   name             String
   age              Int?
   avatarUrl        String?
-  status           Status            @default(OPEN)
   role             UserRole          @default(USER)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -45,24 +44,17 @@ model Profile {
   timezone  String?
   portfolio String?
   job String?
-  skills UserSkill[]
+  skills Skill[]
+
+  likes BigInt @default(0)
 
   @@index([userId])
 }
 
 model Skill {
   id    Int         @id @default(autoincrement())
-  name  String
-  users UserSkill[]
-}
-
-model UserSkill {
-  profileId  Int
-  skillId Int
-  skill   Skill  @relation(fields: [skillId], references: [id])
-  profile    Profile   @relation(fields: [profileId], references: [id])
-
-  @@id([profileId, skillId])
+  name  String      @unique
+  profiles Profile[]
 }
 
 model Interest {
@@ -212,11 +204,6 @@ enum InterestType {
   FIND_PROJECT
   FIND_PEOPLE
   HAVE_PROJECT
-}
-
-enum Status {
-  OPEN
-  BUSY
 }
 
 enum ProjectStatus {

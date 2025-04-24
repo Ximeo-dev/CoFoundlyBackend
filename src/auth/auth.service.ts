@@ -46,10 +46,12 @@ export class AuthService {
 	async login(dto: LoginDto) {
 		const { user, securitySettings } = await this.validateUser(dto)
 
+		const { role, updatedAt, ...rest } = user
+
 		const tokens = this.issueTokens(user.id, securitySettings.jwtTokenVersion)
 
 		return {
-			user,
+			rest,
 			...tokens,
 		}
 	}
@@ -281,6 +283,6 @@ export class AuthService {
 	}
 
 	async unbind2FA(userId: string) {
-		
+
 	}
 }
