@@ -3,6 +3,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Bot, Context } from 'grammy'
 import { AuthService, TwoFAResult } from 'src/auth/auth.service'
+import { onlyAllowedUsers } from './middlewares/only-allowed-users'
 
 @Injectable()
 export class TelegramService {
@@ -15,6 +16,8 @@ export class TelegramService {
 		private readonly authService: AuthService,
 	) {
 		this.BOT_TOKEN = configService.getOrThrow<string>('TELEGRAM_BOT_TOKEN')
+		if (configService.getOrThrow<string>('NODE_ENV') === 'development')
+			bot.use(onlyAllowedUsers)
 	}
 
 	async handle2FACommand(ctx: Context, token: string) {
