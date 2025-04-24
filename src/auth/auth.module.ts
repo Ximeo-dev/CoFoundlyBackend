@@ -7,7 +7,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
 import { JwtModule } from '@nestjs/jwt'
 import { getJwtConfig } from 'src/config/jwt.config'
 import { EmailModule } from 'src/email/email.module'
-import { TelegramService } from 'src/telegram/telegram.service'
 import { TelegramModule } from 'src/telegram/telegram.module'
 
 @Module({
