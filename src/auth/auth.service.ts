@@ -1,5 +1,7 @@
 import {
 	BadRequestException,
+	forwardRef,
+	Inject,
 	Injectable,
 	NotFoundException,
 	UnauthorizedException,
@@ -13,6 +15,21 @@ import { Response } from 'express'
 import { getEnvVar } from 'src/utils/env'
 import * as zxcvbn from 'zxcvbn'
 import { parseBool } from 'src/utils/parseBool'
+import { Context } from 'grammy'
+import { safeCompare } from 'src/utils/safeCompare'
+import {
+	TokenValidationResponse,
+	TokenValidationResult,
+} from 'src/types/token-validation'
+import { User } from '@prisma/client'
+import { TelegramService } from 'src/telegram/telegram.service'
+
+export enum TwoFAResult {
+	UserNotFound,
+	AlreadyEnabled,
+	TokenExpired,
+	Valid,
+}
 
 @Injectable()
 export class AuthService {
@@ -20,8 +37,10 @@ export class AuthService {
 	public REFRESH_TOKEN_NAME = 'refreshToken'
 
 	constructor(
-		private jwt: JwtService,
-		private userService: UserService,
+		private readonly jwt: JwtService,
+		private readonly userService: UserService,
+		@Inject(forwardRef(() => TelegramService))
+		private readonly telegramService: TelegramService,
 	) {}
 
 	async login(dto: LoginDto) {
@@ -161,5 +180,107 @@ export class AuthService {
 			this.removeRefreshTokenFromResponse(res)
 			throw new UnauthorizedException('Invalid refresh token')
 		}
+	}
+
+	async get2FAToken(userId: string) {
+		const user = await this.userService.getByIdWithSecuritySettings(userId)
+
+		if (!user || !user.securitySettings)
+			throw new UnauthorizedException('Invalid user')
+
+		const { securitySettings } = user
+
+		if (securitySettings.twoFactorEnabled)
+			throw new BadRequestException('2FA уже подключена к вашему аккаунту')
+
+		const token = await this.issue2FAToken(user.id)
+		await this.userService.set2FAToken(user.id, token)
+		return token
+	}
+
+	async issue2FAToken(userId: string) {
+		const data = { id: userId }
+
+		return this.jwt.sign(data, {
+			expiresIn: '10m',
+		})
+	}
+
+	private async getPayloadFrom2FAToken(
+		token: string,
+	): Promise<TokenValidationResponse> {
+		try {
+			const payload = await this.jwt.verifyAsync<{ id: string }>(token)
+
+			return {
+				result: TokenValidationResult.Valid,
+				payload,
+			}
+		} catch (error) {
+			if (error.name === 'TokenExpiredError') {
+				return { result: TokenValidationResult.Expired }
+			} else {
+				return { result: TokenValidationResult.Invalid }
+			}
+		}
+	}
+
+	async handle2FAToken(
+		token: string,
+	): Promise<{ result: TwoFAResult; user?: User }> {
+		const validation = await this.getPayloadFrom2FAToken(token)
+
+		if (validation.result === TokenValidationResult.Expired) {
+			return { result: TwoFAResult.TokenExpired }
+		}
+
+		if (
+			validation.result === TokenValidationResult.Invalid ||
+			validation.result !== TokenValidationResult.Valid
+		) {
+			return { result: TwoFAResult.UserNotFound }
+		}
+
+		const payload = validation.payload
+
+		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
+
+		if (!user || !user.securitySettings) {
+			return { result: TwoFAResult.UserNotFound }
+		}
+
+		const { securitySettings, ...rest } = user
+
+		if (securitySettings.twoFactorEnabled) {
+			await this.userService.set2FAToken(user.id, null)
+			return { result: TwoFAResult.AlreadyEnabled }
+		}
+
+		if (!safeCompare(securitySettings.twoFactorToken, token)) {
+			await this.userService.set2FAToken(user.id, null)
+			return { result: TwoFAResult.TokenExpired }
+		}
+
+		await this.userService.set2FAToken(user.id, null)
+		return { result: TwoFAResult.Valid, user: rest }
+	}
+
+	async confirm2FA(userId: string, telegramId: string, ctx: Context) {
+		const user = await this.userService.getByIdWithSecuritySettings(userId)
+
+		if (!user || !user.securitySettings) {
+			await ctx.reply('Пользователь не найден')
+			return
+		}
+
+		await this.userService.setTelegramId(userId, telegramId)
+		await this.userService.set2FAStatus(userId, true)
+
+		await ctx.answerCallbackQuery({ text: '✅ Привязка успешно завершена' })
+		await ctx.editMessageText('✅ Telegram успешно привязан к аккаунту.')
+	}
+
+	async unbind2FA(userId: string) {
+		
 	}
 }

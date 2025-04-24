@@ -9,7 +9,7 @@ import { PrismaService } from 'src/prisma.service'
 
 @Injectable()
 export class UserService {
-	constructor(private prisma: PrismaService) {}
+	constructor(private readonly prisma: PrismaService) {}
 
 	async getById(id: string) {
 		return this.prisma.user.findUnique({
@@ -158,6 +158,39 @@ export class UserService {
 		await this.prisma.user.update({
 			where: { id: userId },
 			data: { email },
+		})
+	}
+
+	async set2FAToken(userId: string, token: string | null) {
+		await this.prisma.securitySettings.update({
+			where: {
+				userId,
+			},
+			data: {
+				twoFactorToken: token,
+			},
+		})
+	}
+
+	async set2FAStatus(userId: string, status: boolean) {
+		await this.prisma.securitySettings.update({
+			where: {
+				userId,
+			},
+			data: {
+				twoFactorEnabled: status,
+			},
+		})
+	}
+
+	async setTelegramId(userId: string, telegramId: string) {
+		await this.prisma.securitySettings.update({
+			where: {
+				userId,
+			},
+			data: {
+				telegramId,
+			},
 		})
 	}
 }
