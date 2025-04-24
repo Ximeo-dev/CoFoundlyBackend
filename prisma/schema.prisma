@@ -11,9 +11,9 @@ model User {
   id               String            @id @default(uuid()) @db.Uuid
   email            String            @unique
   name             String
-  bio              String?
+  age              Int?
+  avatarUrl        String?
   status           Status            @default(OPEN)
-  timezone         String?
   role             UserRole          @default(USER)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -25,16 +25,29 @@ model User {
   projectsOwned    Project[]         @relation("UserProjects")
   securitySettings SecuritySettings?
   Subscription     Subscription[]
-  skills           UserSkill[]
   Chat             Chat[]            @relation("ChatParticipants")
   interests        Interest[]        @relation("InterestToUser")
   projectsJoined   Project[]         @relation("ProjectMembers")
+  profile          Profile?
 }
 
 enum UserRole {
   ADMIN
   CONTENT
   USER
+}
+
+model Profile {
+  id  Int     @id @default(autoincrement())
+  userId  String  @unique @db.Uuid
+  user  User    @relation(fields: [userId], references: [id])
+  bio String?
+  timezone  String?
+  portfolio String?
+  job String?
+  skills UserSkill[]
+
+  @@index([userId])
 }
 
 model Skill {
@@ -44,12 +57,12 @@ model Skill {
 }
 
 model UserSkill {
-  userId  String @db.Uuid
+  profileId  Int
   skillId Int
   skill   Skill  @relation(fields: [skillId], references: [id])
-  user    User   @relation(fields: [userId], references: [id])
+  profile    Profile   @relation(fields: [profileId], references: [id])
 
-  @@id([userId, skillId])
+  @@id([profileId, skillId])
 }
 
 model Interest {
@@ -61,8 +74,10 @@ model Interest {
 model SecuritySettings {
   id               Int     @id @default(autoincrement())
   userId           String  @unique @db.Uuid
-  twoFactorEnabled Boolean @default(false)
   passwordHash     String
+  twoFactorEnabled Boolean @default(false)
+  telegramId String?
+  twoFactorToken String?
   isEmailConfirmed Boolean @default(false)
   emailConfirmationToken String?
   changeEmailToken String?

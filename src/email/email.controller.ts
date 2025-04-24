@@ -13,11 +13,9 @@ export class EmailController {
 	@Get('confirm-email')
 	async confirmEmail(
 		@Query('token') token: string,
-		@Res({ passthrough: true }) res: Response
+		@Res({ passthrough: true }) res: Response,
 	) {
-		const payload =
-			await this.emailService.getPayloadFromToken(token)
-		await this.emailService.handleEmailConfirmationToken(token, payload)
+		const payload = await this.emailService.handleEmailConfirmationToken(token)
 		await this.emailService.confirmEmail(payload.id)
 		return res.redirect(`http://${getEnvVar('FRONTEND_URL')}/profile`)
 	}
@@ -26,10 +24,10 @@ export class EmailController {
 	@Get('confirm-change-email')
 	async confirmChangeEmail(
 		@Query('token') token: string,
-		@Res({ passthrough: true }) res: Response
+		@Res({ passthrough: true }) res: Response,
 	) {
 		const payload =
-			await this.emailService.getPayloadFromToken(token)
+			await this.emailService.handleChangeEmailConfirmationToken(token)
 		await this.emailService.confirmChangeEmail(payload.id, payload.email)
 		return res.redirect(`http://${getEnvVar('')}/profile`)
 	}

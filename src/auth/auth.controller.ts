@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Get,
@@ -20,6 +21,8 @@ import {
 	ResetPasswordRequestDto,
 } from './dto/reset-password.dto'
 import { EmailService } from 'src/email/email.service'
+import { Auth } from './decorators/auth.decorator'
+import { CurrentUser } from './decorators/user.decorator'
 
 @Controller('auth')
 export class AuthController {
@@ -127,5 +130,21 @@ export class AuthController {
 		const payload = await this.emailService.getPayloadFromToken(token)
 		await this.emailService.handleResetPasswordConfirmationToken(token, payload)
 		return this.emailService.confirmResetPassword(payload.id, dto)
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Post('2fa-token')
+	@Auth()
+	async get2FAToken(@CurrentUser('id') id: string) {
+		return this.authService.get2FAToken(id)
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Post('unbind-2fa')
+	@Auth()
+	async unbind2FA(@CurrentUser('id') id: string) {
+		return this.authService.unbind2FA(id)
 	}
 }

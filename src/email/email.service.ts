@@ -16,9 +16,10 @@ import { getEnvVar } from 'src/utils/env'
 import { fillHtmlTemplate } from 'src/utils/fillHtmlTemplate'
 import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
 import { parseBool } from 'src/utils/parseBool'
+import { safeCompare } from 'src/utils/safeCompare'
 import * as zxcvbn from 'zxcvbn'
 
-interface ITokenPayload {
+interface TokenPayload {
 	id: string
 	email: string
 }
@@ -37,13 +38,13 @@ export class EmailService {
 	})
 
 	constructor(
-		private jwt: JwtService,
-		private userService: UserService,
+		private readonly jwt: JwtService,
+		private readonly userService: UserService,
 	) {}
 
 	async getPayloadFromToken(token: string) {
 		try {
-			const payload: ITokenPayload = await this.jwt.verifyAsync(token)
+			const payload: TokenPayload = await this.jwt.verifyAsync(token)
 
 			return payload
 		} catch (error) {
@@ -55,7 +56,8 @@ export class EmailService {
 		}
 	}
 
-	async handleEmailConfirmationToken(token: string, payload: ITokenPayload) {
+	async handleEmailConfirmationToken(token: string) {
+		const payload = await this.getPayloadFromToken(token)
 		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
 
 		if (!user || !user.securitySettings)
@@ -63,17 +65,19 @@ export class EmailService {
 
 		const { securitySettings } = user
 
-		if (securitySettings.emailConfirmationToken !== token) {
+		if (!safeCompare(securitySettings.emailConfirmationToken, token)) {
 			await this.sendEmailConfirmation(payload.id)
 			throw new BadRequestException(
 				'Срок действия ссылки подтверждения истёк. Запрос на подтверждение был отправлен заново',
 			)
 		}
+
+		return payload
 	}
 
 	async handleResetPasswordConfirmationToken(
 		token: string,
-		payload: ITokenPayload,
+		payload: TokenPayload,
 	) {
 		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
 
@@ -82,11 +86,29 @@ export class EmailService {
 
 		const { securitySettings } = user
 
-		if (securitySettings.resetPasswordToken !== token) {
+		if (!safeCompare(securitySettings.resetPasswordToken, token)) {
 			throw new BadRequestException(
 				'Срок действия ссылки подтверждения истёк. Запросите сброс пароля заново',
 			)
 		}
+	}
+
+	async handleChangeEmailConfirmationToken(token: string) {
+		const payload = await this.getPayloadFromToken(token)
+		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
+
+		if (!user || !user.securitySettings)
+			throw new BadRequestException('Пользователь не найден')
+
+		const { securitySettings } = user
+
+		if (!safeCompare(securitySettings.changeEmailToken, token)) {
+			throw new BadRequestException(
+				'Срок действия ссылки подтверждения истёк. Запросите смену почты заново',
+			)
+		}
+
+		return payload
 	}
 
 	async issueConfirmationToken(userId: string, email: string) {
@@ -100,8 +122,7 @@ export class EmailService {
 	async sendEmailConfirmation(userId: string) {
 		const user = await this.userService.getByIdWithSecuritySettings(userId)
 
-		if (!user || !user.securitySettings)
-			return
+		if (!user || !user.securitySettings) return
 
 		const { securitySettings } = user
 
