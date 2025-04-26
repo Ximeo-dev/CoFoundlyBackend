@@ -4,8 +4,10 @@ import {
 	NotFoundException,
 } from '@nestjs/common'
 import { hash, verify } from 'argon2'
+import { plainToInstance } from 'class-transformer'
 import { RegisterDto } from 'src/auth/dto/register.dto'
 import { PrismaService } from 'src/prisma.service'
+import { UserResponseDto } from './dto/user.dto'
 
 @Injectable()
 export class UserService {
@@ -74,6 +76,22 @@ export class UserService {
 		})
 	}
 
+	async delete(userId: string) {
+		const user = await this.prisma.user.findUnique({
+			where: { id: userId },
+		})
+
+		if (!user) throw new BadRequestException('User not exist')
+
+		await this.prisma.$transaction([
+			this.prisma.profile.deleteMany({ where: { userId: userId } }),
+			this.prisma.securitySettings.deleteMany({ where: { userId: userId } }),
+			this.prisma.user.delete({ where: { id: userId } }),
+		])
+
+		return true
+	}
+
 	async getUserData(id: string) {
 		const user = await this.prisma.user.findUnique({
 			where: {
@@ -92,9 +110,9 @@ export class UserService {
 
 		if (!user) throw new NotFoundException(`Invalid user`)
 
-		const { role, updatedAt, ...data } = user
-
-		return data
+		return plainToInstance(UserResponseDto, user, {
+			excludeExtraneousValues: true,
+		})
 	}
 
 	async setEmailConfirmationToken(userId: string, token: string) {

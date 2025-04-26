@@ -7,8 +7,8 @@ import {
 	IsNotEmpty,
 	IsOptional,
 	IsString,
-	IsTimeZone,
 } from 'class-validator'
+import { Flatten } from 'src/utils/flatten-transformer'
 
 export class CreateProfileDto {
 	@IsString()
@@ -29,9 +29,6 @@ export class CreateProfileDto {
 	@ArrayMaxSize(5)
 	@IsString({ each: true })
 	portfolio: string[]
-
-	@IsTimeZone()
-	timezone: string
 }
 
 export class UpdateProfileDto {
@@ -65,12 +62,6 @@ export class UpdateProfileDto {
 	@IsString({ each: true })
 	@Expose()
 	portfolio?: string[]
-
-	@IsOptional()
-	@IsTimeZone()
-	@Expose()
-	@IsNotEmpty()
-	timezone?: string
 }
 
 export class UserProfileResponseDto {
@@ -84,9 +75,6 @@ export class UserProfileResponseDto {
 	bio: string
 
 	@Expose()
-	timezone: string
-
-	@Expose()
 	portfolio: string
 
 	@Expose()
@@ -95,10 +83,18 @@ export class UserProfileResponseDto {
 	@Expose()
 	likes: string
 
+	@Flatten('user')
 	@Expose()
-	user: {
-		age: number
-		avatarUrl: string | null
-		name: string
-	}
+	age: number
+
+	@Flatten('user')
+	@Expose()
+	avatarUrl: string | null
+
+	@Flatten('user')
+	@Expose()
+	name: string
+
+	@Expose()
+	skills: string[]
 }

@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	HttpCode,
 	Patch,
@@ -21,15 +22,21 @@ export class UserController {
 		private readonly emailService: EmailService,
 	) {}
 
-	@HttpCode(200)
 	@Get()
 	@Auth()
-	async user(@CurrentUser('id') id: string) {
+	async createUser(@CurrentUser('id') id: string) {
 		return this.userService.getUserData(id)
 	}
 
+
+	// Отложено до нормальной 2FA
+	@Delete()
+	@Auth()
+	async deleteUser(@CurrentUser('id') id: string) {
+		return this.userService.delete(id)
+	}
+
 	@UsePipes(new ValidationPipe())
-	@HttpCode(200)
 	@Patch('settings/change-email')
 	@Auth()
 	async changeEmail(

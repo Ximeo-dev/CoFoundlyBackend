@@ -1,7 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma.service'
 import { UserService } from 'src/user/user.service'
-import { CreateProfileDto, UpdateProfileDto, UserProfileResponseDto } from './dto/profile.dto'
+import {
+	CreateProfileDto,
+	UpdateProfileDto,
+	UserProfileResponseDto,
+} from './dto/profile.dto'
 import { instanceToPlain, plainToClass } from 'class-transformer'
 
 @Injectable()
@@ -22,6 +26,7 @@ export class ProfileService {
 						name: true,
 					},
 				},
+				skills: true,
 			},
 		})
 
@@ -48,7 +53,7 @@ export class ProfileService {
 			},
 		})
 
-		return this.prisma.profile.create({
+		const profile = await this.prisma.profile.create({
 			data: {
 				userId: userId,
 				bio: dto.bio,
@@ -57,8 +62,21 @@ export class ProfileService {
 				skills: {
 					connect: existingSkills.map((skill) => ({ id: skill.id })),
 				},
-				timezone: dto.timezone,
 			},
+			include: {
+				user: {
+					select: {
+						age: true,
+						avatarUrl: true,
+						name: true,
+					},
+				},
+				skills: true,
+			},
+		})
+
+		return plainToClass(UserProfileResponseDto, profile, {
+			excludeExtraneousValues: true,
 		})
 	}
 
@@ -96,7 +114,7 @@ export class ProfileService {
 			delete baseData.skills
 		}
 
-		return this.prisma.profile.update({
+		const updatedProfile = this.prisma.profile.update({
 			where: { userId },
 			data: {
 				...baseData,
@@ -104,7 +122,32 @@ export class ProfileService {
 			},
 			include: {
 				skills: true,
+				user: {
+					select: {
+						name: true,
+						age: true,
+						avatarUrl: true,
+					},
+				},
 			},
 		})
+
+		return plainToClass(UserProfileResponseDto, updatedProfile, {
+			excludeExtraneousValues: true,
+		})
+	}
+
+	async deleteUserProfile(userId: string) {
+		const userProfile = await this.prisma.profile.findUnique({
+			where: { userId },
+		})
+
+		if (!userProfile) throw new BadRequestException('Profile not exist')
+
+		await this.prisma.profile.delete({
+			where: { userId },
+		})
+
+		return true
 	}
 }
