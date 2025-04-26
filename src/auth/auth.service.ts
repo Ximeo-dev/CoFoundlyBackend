@@ -23,6 +23,8 @@ import {
 } from 'src/types/token-validation'
 import { User } from '@prisma/client'
 import { TelegramService } from 'src/telegram/telegram.service'
+import { plainToClass } from 'class-transformer'
+import { UserResponseDto } from 'src/user/dto/user.dto'
 
 export enum TwoFAResult {
 	UserNotFound,
@@ -44,14 +46,23 @@ export class AuthService {
 	) {}
 
 	async login(dto: LoginDto) {
-		const { user, securitySettings } = await this.validateUser(dto)
+		const { userData, securitySettings } = await this.validateUser(dto)
 
-		const { role, updatedAt, ...rest } = user
+		const tokens = this.issueTokens(
+			userData.id,
+			securitySettings.jwtTokenVersion,
+		)
 
-		const tokens = this.issueTokens(user.id, securitySettings.jwtTokenVersion)
+		const user = plainToClass(
+			UserResponseDto,
+			{ ...userData, securitySettings },
+			{
+				excludeExtraneousValues: true,
+			},
+		)
 
 		return {
-			rest,
+			user,
 			...tokens,
 		}
 	}
@@ -77,14 +88,14 @@ export class AuthService {
 		if (!userWithSecurity || !userWithSecurity.securitySettings)
 			throw new UnauthorizedException('Неверный email или пароль')
 
-		const { securitySettings, ...user } = userWithSecurity
+		const { securitySettings, ...userData } = userWithSecurity
 
 		const isValid = await verify(securitySettings.passwordHash, dto.password)
 
 		if (!isValid) throw new UnauthorizedException('Неверный логин или пароль')
 
 		return {
-			user,
+			userData,
 			securitySettings,
 		}
 	}
@@ -100,14 +111,25 @@ export class AuthService {
 		if (result.score <= 1)
 			throw new BadRequestException('Пароль слишком простой')
 
-		const { securitySettings, ...user } = await this.userService.create(dto)
+		const { securitySettings, ...userData } = await this.userService.create(dto)
 
 		if (!securitySettings)
 			throw new BadRequestException(
 				'Во время регистрации возникла ошибка. Попробуйте позже',
 			)
 
-		const tokens = this.issueTokens(user.id, securitySettings.jwtTokenVersion)
+		const tokens = this.issueTokens(
+			userData.id,
+			securitySettings.jwtTokenVersion,
+		)
+
+		const user = plainToClass(
+			UserResponseDto,
+			{ ...userData, securitySettings },
+			{
+				excludeExtraneousValues: true,
+			},
+		)
 
 		return {
 			user,
@@ -282,7 +304,5 @@ export class AuthService {
 		await ctx.editMessageText('✅ Telegram успешно привязан к аккаунту.')
 	}
 
-	async unbind2FA(userId: string) {
-
-	}
+	async unbind2FA(userId: string) {}
 }

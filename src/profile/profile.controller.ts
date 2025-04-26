@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
 	ParseUUIDPipe,
@@ -48,5 +49,11 @@ export class ProfileController {
 		@Body() dto: UpdateProfileDto,
 	) {
 		return this.profileService.updateUserProfile(id, dto)
+	}
+
+	@Delete()
+	@Auth()
+	async deleteProfile(@CurrentUser('id') id: string) {
+		return this.profileService.deleteUserProfile(id)
 	}
 }
