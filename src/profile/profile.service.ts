@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma.service'
 import { UserService } from 'src/user/user.service'
-import { CreateProfileDto } from './dto/profile.dto'
+import { CreateProfileDto, UpdateProfileDto, UserProfileResponseDto } from './dto/profile.dto'
+import { instanceToPlain, plainToClass } from 'class-transformer'
 
 @Injectable()
 export class ProfileService {
@@ -11,12 +12,31 @@ export class ProfileService {
 	) {}
 
 	async getUserProfile(userId: string) {
-		return this.prisma.profile.findUnique({
+		const profile = await this.prisma.profile.findUnique({
 			where: { userId },
+			include: {
+				user: {
+					select: {
+						age: true,
+						avatarUrl: true,
+						name: true,
+					},
+				},
+			},
+		})
+
+		return plainToClass(UserProfileResponseDto, profile, {
+			excludeExtraneousValues: true,
 		})
 	}
 
 	async createUserProfile(userId: string, dto: CreateProfileDto) {
+		const userProfile = await this.prisma.profile.findUnique({
+			where: { userId },
+		})
+
+		if (userProfile) throw new BadRequestException('Profile already exist')
+
 		const existingSkills = await this.prisma.skill.findMany({
 			where: {
 				name: {
@@ -38,6 +58,52 @@ export class ProfileService {
 					connect: existingSkills.map((skill) => ({ id: skill.id })),
 				},
 				timezone: dto.timezone,
+			},
+		})
+	}
+
+	async updateUserProfile(userId: string, dto: UpdateProfileDto) {
+		const userProfile = await this.prisma.profile.findUnique({
+			where: { userId },
+		})
+
+		if (!userProfile) throw new BadRequestException('Profile not exist')
+
+		const baseData =
+			(instanceToPlain(dto, {
+				exposeUnsetFields: false,
+			}) as Record<string, any>) || {}
+
+		if (baseData.portfolio) {
+			baseData.portfolio = baseData.portfolio.join(';')
+		}
+
+		let skillsData = {}
+		if (baseData.skills && baseData.skills.length > 0) {
+			const existingSkills = await this.prisma.skill.findMany({
+				where: {
+					name: {
+						in: baseData.skills,
+					},
+				},
+				select: { id: true },
+			})
+			skillsData = {
+				skills: {
+					connect: existingSkills.map((skill) => ({ id: skill.id })),
+				},
+			}
+			delete baseData.skills
+		}
+
+		return this.prisma.profile.update({
+			where: { userId },
+			data: {
+				...baseData,
+				...skillsData,
+			},
+			include: {
+				skills: true,
 			},
 		})
 	}
