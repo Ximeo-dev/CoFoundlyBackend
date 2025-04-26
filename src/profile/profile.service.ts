@@ -1,7 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma.service'
 import { UserService } from 'src/user/user.service'
-import { CreateProfileDto, UpdateProfileDto, UserProfileResponseDto } from './dto/profile.dto'
+import {
+	CreateProfileDto,
+	UpdateProfileDto,
+	UserProfileResponseDto,
+} from './dto/profile.dto'
 import { instanceToPlain, plainToClass } from 'class-transformer'
 
 @Injectable()
@@ -57,7 +61,6 @@ export class ProfileService {
 				skills: {
 					connect: existingSkills.map((skill) => ({ id: skill.id })),
 				},
-				timezone: dto.timezone,
 			},
 		})
 	}

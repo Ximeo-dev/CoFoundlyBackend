@@ -41,7 +41,6 @@ model Profile {
   userId  String  @unique @db.Uuid
   user  User    @relation(fields: [userId], references: [id])
   bio String?
-  timezone  String?
   portfolio String?
   job String?
   skills Skill[]
