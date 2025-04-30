@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import * as sharp from 'sharp'
 import { S3Service } from 'src/s3.service'
 import { UserService } from 'src/user/user.service'
+import { getEnvVar } from 'src/utils/env'
 
 export const AVATAR_SIZES = [512, 128, 64]
 
@@ -33,10 +34,21 @@ export class ImagesService {
 
 		await Promise.all(uploadTasks)
 
-		const key512 = `${baseKey}-512.webp`
-		const avatarUrl = this.S3Service.getPublicUrl(key512)
+		const key512 = `${getEnvVar('API_URL')}/images/avatar/${userId}/512`
 
-		await this.userService.setUserAvatar(userId, avatarUrl)
+		await this.userService.setUserAvatar(userId, key512)
+	}
+
+	async deleteAvatar(userId: string) {
+		const baseKey = `avatars/${userId}`
+
+		await Promise.all(
+			AVATAR_SIZES.map((size) =>
+				this.S3Service.delete(`${baseKey}-${size}.webp`).catch(() => null),
+			),
+		)
+
+		await this.userService.setUserAvatar(userId, null)
 	}
 
 	async getAvatar(userId: string, size: number) {

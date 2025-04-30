@@ -10,6 +10,7 @@ import {
 	BadRequestException,
 	HttpCode,
 	ParseUUIDPipe,
+	Delete,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
@@ -44,6 +45,16 @@ export class ImagesController {
 		})
 
 		stream.pipe(res)
+	}
+
+	@HttpCode(200)
+	@Delete('avatar')
+	@Auth()
+	async deleteAvatar(
+		@CurrentUser('id') userId: string,
+	) {
+		await this.imagesService.deleteAvatar(userId)
+		return true
 	}
 
 	@Get('avatar/:userId/:size')

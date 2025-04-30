@@ -141,7 +141,7 @@ export class UserService {
 		})
 	}
 
-	async setUserAvatar(id: string, avatarUrl: string) {
+	async setUserAvatar(id: string, avatarUrl: string | null) {
 		await this.prisma.user.update({
 			where: { id },
 			data: {
