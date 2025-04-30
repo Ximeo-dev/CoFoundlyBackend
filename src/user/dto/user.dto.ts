@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator'
+import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
 import { Flatten } from 'src/utils/flatten-transformer'
 
@@ -12,6 +12,20 @@ export class ChangeEmailDto {
 	@IsEmail()
 	@IsNotEmpty()
 	newEmail: string
+}
+
+export class UpdateUserDto {
+	@IsOptional()
+	@IsString()
+	@Expose()
+	@IsNotEmpty()
+	name?: string
+
+	@IsOptional()
+	@IsNumber()
+	@Expose()
+	@IsNotEmpty()
+	age?: number
 }
 
 export class SecuritySettingsDto {

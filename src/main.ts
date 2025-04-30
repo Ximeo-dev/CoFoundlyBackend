@@ -4,11 +4,16 @@ import * as cookieParser from 'cookie-parser'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { getEnvVar } from './utils/env'
 import { ValidationPipe } from '@nestjs/common'
+import * as dotenv from 'dotenv'
+import * as dotenvExpand from 'dotenv-expand'
 
 async function bootstrap() {
 	;(BigInt.prototype as any).toJSON = function () {
 		return this.toString()
 	}
+
+	const myEnv = dotenv.config();
+	dotenvExpand.expand(myEnv);
 
 	const app = await NestFactory.create<NestExpressApplication>(AppModule)
 
