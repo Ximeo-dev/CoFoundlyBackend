@@ -15,9 +15,7 @@ import { UpdateUserDto, UserResponseDto } from './dto/user.dto'
 
 @Injectable()
 export class UserService {
-	constructor(
-		private readonly prisma: PrismaService,
-	) {}
+	constructor(private readonly prisma: PrismaService) {}
 
 	async getById(id: string) {
 		return this.prisma.user.findUnique({
@@ -140,6 +138,15 @@ export class UserService {
 
 		return plainToClass(UserResponseDto, updatedData, {
 			excludeExtraneousValues: true,
+		})
+	}
+
+	async setUserAvatar(id: string, avatarUrl: string) {
+		await this.prisma.user.update({
+			where: { id },
+			data: {
+				avatarUrl,
+			},
 		})
 	}
 
