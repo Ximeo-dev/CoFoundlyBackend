@@ -55,10 +55,6 @@ export class S3Service {
 		)
 	}
 
-	getPublicUrl(key: string): string {
-		return `${this.endpoint}/${this.bucket}/${key}`
-	}
-
 	async getFileStream(key: string) {
 		const command = new GetObjectCommand({
 			Bucket: this.bucket,

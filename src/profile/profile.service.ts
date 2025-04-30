@@ -7,15 +7,25 @@ import {
 	UserProfileResponseDto,
 } from './dto/profile.dto'
 import { instanceToPlain, plainToClass } from 'class-transformer'
+import { RedisService } from 'src/redis.service'
 
 @Injectable()
 export class ProfileService {
 	constructor(
 		private readonly userService: UserService,
 		private readonly prisma: PrismaService,
+		private readonly redis: RedisService
 	) {}
 
 	async getUserProfile(userId: string) {
+		const cacheKey = `profile:${userId}`
+
+		const cached =
+			await this.redis.getObject<UserProfileResponseDto>(cacheKey)
+		if (cached) {
+			return cached
+		}
+
 		const profile = await this.prisma.profile.findUnique({
 			where: { userId },
 			include: {
@@ -30,9 +40,15 @@ export class ProfileService {
 			},
 		})
 
-		return plainToClass(UserProfileResponseDto, profile, {
+		if (!profile) return null
+
+		const dto = plainToClass(UserProfileResponseDto, profile, {
 			excludeExtraneousValues: true,
 		})
+
+		await this.redis.setObject(cacheKey, dto, 180)
+
+		return dto
 	}
 
 	async createUserProfile(userId: string, dto: CreateProfileDto) {

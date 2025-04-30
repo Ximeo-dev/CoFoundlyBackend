@@ -5,19 +5,19 @@ import * as sharp from 'sharp'
 export class ImageValidationPipe implements PipeTransform {
 	async transform(file: Express.Multer.File): Promise<Express.Multer.File> {
 		if (!file) {
-			throw new BadRequestException('Файл не найден')
+			throw new BadRequestException('Файл не передан')
 		}
 
 		// 1. Проверка размера (до 2MB)
 		const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 		if (file.size > MAX_SIZE) {
-			throw new BadRequestException('Файл слишком большой (максимум 2MB)')
+			throw new BadRequestException('Максимальный допустимый размер файла 2MB')
 		}
 
 		// 2. Проверка формата
 		const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp']
 		if (!allowedMimeTypes.includes(file.mimetype)) {
-			throw new BadRequestException('Недопустимый формат изображения')
+			throw new BadRequestException(`Недопустимый формат изображения. Разрешённые форматы: ${allowedMimeTypes.map((format) => format.split('/')[1]).join(', ')}`)
 		}
 
 		// 3. Проверка разрешения
