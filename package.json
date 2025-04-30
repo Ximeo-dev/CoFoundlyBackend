@@ -37,6 +37,7 @@
     "dotenv": "^16.5.0",
     "dotenv-expand": "^12.0.2",
     "grammy": "^1.36.1",
+    "ioredis": "^5.6.1",
     "multer": "^1.4.5-lts.2",
     "nodemailer": "^6.10.1",
     "passport": "^0.7.0",
