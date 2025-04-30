@@ -7,6 +7,7 @@ import { TelegramModule } from './telegram/telegram.module'
 import { EmailModule } from './email/email.module'
 import { SwipeModule } from './swipe/swipe.module';
 import { ProfileModule } from './profile/profile.module';
+import { ImagesModule } from './images/images.module';
 
 @Module({
 	imports: [
@@ -18,7 +19,8 @@ import { ProfileModule } from './profile/profile.module';
 		EmailModule,
 		TelegramModule,
 		SwipeModule,
-		ProfileModule
+		ProfileModule,
+		ImagesModule
 	],
 	controllers: [AppController],
 })

@@ -3,15 +3,21 @@ import {
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common'
-import { hash, verify } from 'argon2'
-import { plainToInstance } from 'class-transformer'
+import { hash } from 'argon2'
+import {
+	instanceToPlain,
+	plainToClass,
+	plainToInstance,
+} from 'class-transformer'
 import { RegisterDto } from 'src/auth/dto/register.dto'
 import { PrismaService } from 'src/prisma.service'
-import { UserResponseDto } from './dto/user.dto'
+import { UpdateUserDto, UserResponseDto } from './dto/user.dto'
 
 @Injectable()
 export class UserService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+	) {}
 
 	async getById(id: string) {
 		return this.prisma.user.findUnique({
@@ -111,6 +117,28 @@ export class UserService {
 		if (!user) throw new NotFoundException(`Invalid user`)
 
 		return plainToInstance(UserResponseDto, user, {
+			excludeExtraneousValues: true,
+		})
+	}
+
+	async updateUserData(id: string, dto: UpdateUserDto) {
+		const userData = await this.getUserData(id)
+
+		if (!userData) throw new BadRequestException('User not exist')
+
+		const baseData =
+			(instanceToPlain(dto, {
+				exposeUnsetFields: false,
+			}) as Record<string, any>) || {}
+
+		const updatedData = this.prisma.user.update({
+			where: { id },
+			data: {
+				...baseData,
+			},
+		})
+
+		return plainToClass(UserResponseDto, updatedData, {
 			excludeExtraneousValues: true,
 		})
 	}

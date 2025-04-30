@@ -5,15 +5,19 @@ import {
 	Get,
 	HttpCode,
 	Patch,
+	Post,
 	Put,
+	UploadedFile,
+	UseInterceptors,
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
 import { UserService } from './user.service'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
-import { ChangeEmailDto } from './dto/user.dto'
+import { ChangeEmailDto, UpdateUserDto } from './dto/user.dto'
 import { EmailService } from 'src/email/email.service'
+import { FileInterceptor } from '@nestjs/platform-express'
 
 @Controller('user')
 export class UserController {
@@ -27,7 +31,6 @@ export class UserController {
 	async createUser(@CurrentUser('id') id: string) {
 		return this.userService.getUserData(id)
 	}
-
 
 	// Отложено до нормальной 2FA
 	@Delete()
@@ -44,5 +47,15 @@ export class UserController {
 		@Body() dto: ChangeEmailDto,
 	) {
 		return this.emailService.sendChangeEmailConfirmation(id, dto)
+	}
+
+	@UsePipes(new ValidationPipe())
+	@Patch()
+	@Auth()
+	async updateUser(
+		@CurrentUser('id') id: string,
+		@Body() dto: UpdateUserDto,
+	) {
+		return this.userService.updateUserData(id, dto)
 	}
 }
