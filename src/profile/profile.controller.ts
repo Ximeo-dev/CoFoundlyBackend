@@ -27,7 +27,7 @@ export class ProfileController {
 
 	@Get(':id')
 	@Auth()
-	async getForeignProfile(@Param('id', new ParseUUIDPipe()) id: string) {
+	async getForeignProfile(@Param('id', ParseUUIDPipe) id: string) {
 		return this.profileService.getUserProfile(id)
 	}
 

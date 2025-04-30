@@ -46,7 +46,7 @@ export class ImagesService {
 
 		let key = `avatars/${userId}-${size}.webp`
 
-		if (!user.avatarUrl) key = `avatars/default-avatar-${size}.webp`
+		if (!user.avatarUrl) throw new NotFoundException('User avatar not found')
 
 		return this.S3Service.getFileStream(key)
 	}

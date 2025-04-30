@@ -3,12 +3,7 @@ import {
 	Controller,
 	Delete,
 	Get,
-	HttpCode,
 	Patch,
-	Post,
-	Put,
-	UploadedFile,
-	UseInterceptors,
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
@@ -17,7 +12,6 @@ import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
 import { ChangeEmailDto, UpdateUserDto } from './dto/user.dto'
 import { EmailService } from 'src/email/email.service'
-import { FileInterceptor } from '@nestjs/platform-express'
 
 @Controller('user')
 export class UserController {
@@ -28,7 +22,7 @@ export class UserController {
 
 	@Get()
 	@Auth()
-	async createUser(@CurrentUser('id') id: string) {
+	async getUser(@CurrentUser('id') id: string) {
 		return this.userService.getUserData(id)
 	}
 

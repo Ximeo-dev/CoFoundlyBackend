@@ -9,6 +9,7 @@ import {
 	ParseIntPipe,
 	BadRequestException,
 	HttpCode,
+	ParseUUIDPipe,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
@@ -47,7 +48,7 @@ export class ImagesController {
 
 	@Get('avatar/:userId/:size')
 	async getAvatar(
-		@Param('userId') userId: string,
+		@Param('userId', ParseUUIDPipe) userId: string,
 		@Param('size', ParseIntPipe) size: number,
 		@Res() res: Response,
 	) {
