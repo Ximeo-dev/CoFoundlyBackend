@@ -12,8 +12,8 @@ async function bootstrap() {
 		return this.toString()
 	}
 
-	const myEnv = dotenv.config();
-	dotenvExpand.expand(myEnv);
+	const myEnv = dotenv.config()
+	dotenvExpand.expand(myEnv)
 
 	const app = await NestFactory.create<NestExpressApplication>(AppModule)
 

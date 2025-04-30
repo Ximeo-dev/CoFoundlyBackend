@@ -1,9 +1,10 @@
 import {
 	DeleteObjectCommand,
+	GetObjectCommand,
 	PutObjectCommand,
 	S3Client,
 } from '@aws-sdk/client-s3'
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 @Injectable()
@@ -56,5 +57,26 @@ export class S3Service {
 
 	getPublicUrl(key: string): string {
 		return `${this.endpoint}/${this.bucket}/${key}`
+	}
+
+	async getFileStream(key: string) {
+		const command = new GetObjectCommand({
+			Bucket: this.bucket,
+			Key: key,
+		})
+
+		try {
+			const response = await this.s3Client.send(command)
+			return response.Body as NodeJS.ReadableStream
+		} catch (error: any) {
+			if (
+				error.name === 'NoSuchKey' ||
+				error.$metadata?.httpStatusCode === 404
+			) {
+				throw new NotFoundException('File not found')
+			}
+
+			throw error
+		}
 	}
 }

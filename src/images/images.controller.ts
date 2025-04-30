@@ -8,12 +8,12 @@ import {
 	Res,
 	ParseIntPipe,
 	BadRequestException,
+	HttpCode,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { User } from '@prisma/client'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
 import { ImageValidationPipe } from 'src/pipes/image-validation-pipe'
-import { ImagesService } from './images.service'
+import { AVATAR_SIZES, ImagesService } from './images.service'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { Response } from 'express'
 
@@ -21,17 +21,28 @@ import { Response } from 'express'
 export class ImagesController {
 	constructor(private readonly imagesService: ImagesService) {}
 
+	@HttpCode(200)
 	@Post('avatar')
-	@UseInterceptors(FileInterceptor('avatar'))
+	@UseInterceptors(
+		FileInterceptor('avatar', {
+			limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+		}),
+	)
 	@Auth()
 	async uploadAvatar(
 		@UploadedFile(ImageValidationPipe) file: Express.Multer.File,
-		@CurrentUser() user: User,
+		@CurrentUser('id') userId: string,
 		@Res() res: Response,
 	) {
-		await this.imagesService.processAndStoreAvatar(user.id, file.buffer)
-		const url = this.imagesService.getAvatarUrl(user.id, 128)
-		res.redirect(url)
+		await this.imagesService.processAndStoreAvatar(userId, file.buffer)
+		const stream = await this.imagesService.getAvatar(userId, 512)
+
+		res.set({
+			'Content-Type': 'image/webp',
+			'Cache-Control': 'public, max-age=31536000',
+		})
+
+		stream.pipe(res)
 	}
 
 	@Get('avatar/:userId/:size')
@@ -40,14 +51,19 @@ export class ImagesController {
 		@Param('size', ParseIntPipe) size: number,
 		@Res() res: Response,
 	) {
-		const allowedSizes = [64, 128, 512]
-		if (!allowedSizes.includes(size)) {
+		if (!AVATAR_SIZES.includes(size)) {
 			throw new BadRequestException(
 				'Неверный размер. Допустимые значения: 64, 128, 512',
 			)
 		}
 
-		const url = this.imagesService.getAvatarUrl(userId, size)
-		res.redirect(url)
+		const stream = await this.imagesService.getAvatar(userId, size)
+
+		res.set({
+			'Content-Type': 'image/webp',
+			'Cache-Control': 'public, max-age=31536000',
+		})
+
+		stream.pipe(res)
 	}
 }

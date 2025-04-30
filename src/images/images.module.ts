@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
-import { ImagesService } from './images.service';
-import { ImagesController } from './images.controller';
+import { Module } from '@nestjs/common'
+import { ImagesService } from './images.service'
+import { ImagesController } from './images.controller'
 import { S3Service } from 'src/s3.service'
-import { PrismaService } from 'src/prisma.service'
+import { UserModule } from 'src/user/user.module'
 
 @Module({
-  controllers: [ImagesController],
-  providers: [ImagesService, S3Service, PrismaService],
+	imports: [UserModule],
+	controllers: [ImagesController],
+	providers: [ImagesService, S3Service],
 })
 export class ImagesModule {}
