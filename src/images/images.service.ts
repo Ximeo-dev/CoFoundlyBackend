@@ -34,7 +34,7 @@ export class ImagesService {
 
 		await Promise.all(uploadTasks)
 
-		const key512 = `${getEnvVar('API_URL')}/images/avatar/${userId}/512`
+		const key512 = `${getEnvVar('IMAGE_HOST_URL')}/images/avatar/${userId}/512`
 
 		await this.userService.setUserAvatar(userId, key512)
 	}
