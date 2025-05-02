@@ -32,6 +32,7 @@ export class S3Service {
 			},
 			endpoint: this.endpoint,
 		})
+		console.log('[S3] Storage connected')
 	}
 
 	async uploadPublic(key: string, buffer: Buffer, contentType: string) {

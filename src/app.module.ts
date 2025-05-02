@@ -8,6 +8,9 @@ import { EmailModule } from './email/email.module'
 import { SwipeModule } from './swipe/swipe.module';
 import { ProfileModule } from './profile/profile.module';
 import { ImagesModule } from './images/images.module';
+import { RedisModule } from './redis/redis.module'
+import { PrismaModule } from './prisma/prisma.module'
+import { S3Module } from './s3/s3.module'
 
 @Module({
 	imports: [
@@ -20,7 +23,10 @@ import { ImagesModule } from './images/images.module';
 		TelegramModule,
 		SwipeModule,
 		ProfileModule,
-		ImagesModule
+		ImagesModule,
+		RedisModule,
+		PrismaModule,
+		S3Module
 	],
 	controllers: [AppController],
 })

@@ -1,27 +1,26 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { PrismaService } from 'src/prisma.service'
+import { instanceToPlain, plainToClass } from 'class-transformer'
+import { PrismaService } from 'src/prisma/prisma.service'
+import { RedisService } from 'src/redis/redis.service'
 import { UserService } from 'src/user/user.service'
 import {
 	CreateProfileDto,
 	UpdateProfileDto,
 	UserProfileResponseDto,
 } from './dto/profile.dto'
-import { instanceToPlain, plainToClass } from 'class-transformer'
-import { RedisService } from 'src/redis.service'
 
 @Injectable()
 export class ProfileService {
 	constructor(
 		private readonly userService: UserService,
 		private readonly prisma: PrismaService,
-		private readonly redis: RedisService
+		private readonly redis: RedisService,
 	) {}
 
 	async getUserProfile(userId: string) {
 		const cacheKey = `profile:${userId}`
 
-		const cached =
-			await this.redis.getObject<UserProfileResponseDto>(cacheKey)
+		const cached = await this.redis.getObject<UserProfileResponseDto>(cacheKey)
 		if (cached) {
 			return cached
 		}

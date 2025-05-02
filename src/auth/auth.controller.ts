@@ -23,6 +23,7 @@ import {
 import { EmailService } from 'src/email/email.service'
 import { Auth } from './decorators/auth.decorator'
 import { CurrentUser } from './decorators/user.decorator'
+import { TwoFactorAction } from 'src/types/2fa.types'
 
 @Controller('auth')
 export class AuthController {
@@ -134,15 +135,20 @@ export class AuthController {
 
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
-	@Post('2fa-token')
+	@Post('2fa-bind')
 	@Auth()
 	async get2FAToken(@CurrentUser('id') id: string) {
-		return this.authService.get2FAToken(id)
+		const securitySettings =
+			await this.userService.getUserSecuritySettingsById(id)
+
+		if (securitySettings?.twoFactorEnabled)
+			throw new BadRequestException('2FA уже подключена к вашему аккаунту')
+		return this.authService.issue2FAToken(id, TwoFactorAction.BIND)
 	}
 
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
-	@Post('unbind-2fa')
+	@Post('2fa-unbind')
 	@Auth()
 	async unbind2FA(@CurrentUser('id') id: string) {
 		return this.authService.unbind2FA(id)
