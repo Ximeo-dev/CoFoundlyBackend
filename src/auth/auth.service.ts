@@ -3,34 +3,37 @@ import {
 	forwardRef,
 	Inject,
 	Injectable,
-	NotFoundException,
 	UnauthorizedException,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { verify } from 'argon2'
-import { UserService } from 'src/user/user.service'
-import { RegisterDto } from './dto/register.dto'
-import { LoginDto } from './dto/login.dto'
-import { Response } from 'express'
-import { getEnvVar } from 'src/utils/env'
-import * as zxcvbn from 'zxcvbn'
-import { parseBool } from 'src/utils/parseBool'
-import { Context } from 'grammy'
-import { safeCompare } from 'src/utils/safeCompare'
-import {
-	TokenValidationResponse,
-	TokenValidationResult,
-} from 'src/types/token-validation'
-import { User } from '@prisma/client'
-import { TelegramService } from 'src/telegram/telegram.service'
 import { plainToClass } from 'class-transformer'
+import { randomBytes } from 'crypto'
+import { Response } from 'express'
+import { TTL_BY_ACTION } from 'src/constants/constants'
+import { RedisService } from 'src/redis/redis.service'
+import { TelegramService } from 'src/telegram/telegram.service'
+import { TwoFactorAction } from 'src/types/2fa.types'
+import { hasSecuritySettings } from 'src/types/user.guards'
+import { UserWithSecurity } from 'src/types/user.types'
 import { UserResponseDto } from 'src/user/dto/user.dto'
+import { UserService } from 'src/user/user.service'
+import { getEnvVar } from 'src/utils/env'
+import { parseBool } from 'src/utils/parseBool'
+import * as zxcvbn from 'zxcvbn'
+import { LoginDto } from './dto/login.dto'
+import { RegisterDto } from './dto/register.dto'
 
 export enum TwoFAResult {
 	UserNotFound,
 	AlreadyEnabled,
 	TokenExpired,
 	Valid,
+}
+
+export enum ConfirmTwoFAResult {
+	UserNotFound,
+	Success,
 }
 
 @Injectable()
@@ -43,6 +46,7 @@ export class AuthService {
 		private readonly userService: UserService,
 		@Inject(forwardRef(() => TelegramService))
 		private readonly telegramService: TelegramService,
+		private readonly redis: RedisService,
 	) {}
 
 	async login(dto: LoginDto) {
@@ -206,102 +210,91 @@ export class AuthService {
 		}
 	}
 
-	async get2FAToken(userId: string) {
-		const user = await this.userService.getByIdWithSecuritySettings(userId)
+	private key2FA(action: TwoFactorAction, token: string): string {
+		return `2fa:${action}:${token}`
+	}
 
-		if (!user || !user.securitySettings)
-			throw new UnauthorizedException('Invalid user')
+	async validate2FAToken(
+		token: string,
+		action: TwoFactorAction,
+	): Promise<string | null> {
+		const key = this.key2FA(action, token)
+		const userId = await this.redis.get(key)
+		if (!userId) return null
 
-		const { securitySettings } = user
+		await this.redis.del(key)
+		return userId
+	}
 
-		if (securitySettings.twoFactorEnabled)
-			throw new BadRequestException('2FA уже подключена к вашему аккаунту')
+	async issue2FAToken(userId: string, action: TwoFactorAction) {
+		let token: string
+		do {
+			token = randomBytes(8).toString('hex')
+		} while (await this.redis.exists(this.key2FA(action, token)))
 
-		const token = await this.issue2FAToken(user.id)
-		await this.userService.set2FAToken(user.id, token)
+		const ttl = TTL_BY_ACTION[action] ?? 300
+		await this.redis.set(this.key2FA(action, token), userId, ttl)
+
 		return token
 	}
 
-	async issue2FAToken(userId: string) {
-		const data = { id: userId }
+	// async handle2FAToken(
+	// 	token: string,
+	// 	action: TwoFactorAction,
+	// ): Promise<{ result: TwoFAResult; user?: User }> {
+	// 	const userId = await this.validate2FAToken(token, action)
 
-		return this.jwt.sign(data, {
-			expiresIn: '10m',
-		})
-	}
+	// 	if (!userId) {
+	// 		return { result: TwoFAResult.TokenExpired }
+	// 	}
 
-	private async getPayloadFrom2FAToken(
+	// 	const user = await this.userService.getByIdWithSecuritySettings(userId)
+
+	// 	if (!user || !user.securitySettings) {
+	// 		return { result: TwoFAResult.UserNotFound }
+	// 	}
+
+	// 	const { securitySettings, ...rest } = user
+
+	// 	if (securitySettings.twoFactorEnabled) {
+	// 		return { result: TwoFAResult.AlreadyEnabled }
+	// 	}
+
+	// 	return { result: TwoFAResult.Valid, user: rest }
+	// }
+
+	async handle2FAToken<T>(
 		token: string,
-	): Promise<TokenValidationResponse> {
-		try {
-			const payload = await this.jwt.verifyAsync<{ id: string }>(token)
+		action: TwoFactorAction,
+		handler: (user: UserWithSecurity) => Promise<T | undefined>,
+	): Promise<{ result: TwoFAResult; user?: T }> {
+		const userId = await this.validate2FAToken(token, action)
 
-			return {
-				result: TokenValidationResult.Valid,
-				payload,
-			}
-		} catch (error) {
-			if (error.name === 'TokenExpiredError') {
-				return { result: TokenValidationResult.Expired }
-			} else {
-				return { result: TokenValidationResult.Invalid }
-			}
-		}
-	}
-
-	async handle2FAToken(
-		token: string,
-	): Promise<{ result: TwoFAResult; user?: User }> {
-		const validation = await this.getPayloadFrom2FAToken(token)
-
-		if (validation.result === TokenValidationResult.Expired) {
+		if (!userId) {
 			return { result: TwoFAResult.TokenExpired }
 		}
 
-		if (
-			validation.result === TokenValidationResult.Invalid ||
-			validation.result !== TokenValidationResult.Valid
-		) {
-			return { result: TwoFAResult.UserNotFound }
+		const user = await this.userService.getByIdWithSecuritySettings(userId)
+
+		if (!hasSecuritySettings(user)) return { result: TwoFAResult.UserNotFound }
+
+		return {
+			result: TwoFAResult.Valid,
+			user: await handler(user),
 		}
-
-		const payload = validation.payload
-
-		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
-
-		if (!user || !user.securitySettings) {
-			return { result: TwoFAResult.UserNotFound }
-		}
-
-		const { securitySettings, ...rest } = user
-
-		if (securitySettings.twoFactorEnabled) {
-			await this.userService.set2FAToken(user.id, null)
-			return { result: TwoFAResult.AlreadyEnabled }
-		}
-
-		if (!safeCompare(securitySettings.twoFactorToken, token)) {
-			await this.userService.set2FAToken(user.id, null)
-			return { result: TwoFAResult.TokenExpired }
-		}
-
-		await this.userService.set2FAToken(user.id, null)
-		return { result: TwoFAResult.Valid, user: rest }
 	}
 
-	async confirm2FA(userId: string, telegramId: string, ctx: Context) {
+	async confirm2FA(userId: string, telegramId: string) {
 		const user = await this.userService.getByIdWithSecuritySettings(userId)
 
 		if (!user || !user.securitySettings) {
-			await ctx.reply('Пользователь не найден')
-			return
+			return ConfirmTwoFAResult.UserNotFound
 		}
 
 		await this.userService.setTelegramId(userId, telegramId)
 		await this.userService.set2FAStatus(userId, true)
 
-		await ctx.answerCallbackQuery({ text: '✅ Привязка успешно завершена' })
-		await ctx.editMessageText('✅ Telegram успешно привязан к аккаунту.')
+		return ConfirmTwoFAResult.Success
 	}
 
 	async unbind2FA(userId: string) {}

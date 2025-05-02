@@ -10,7 +10,7 @@ import {
 	plainToInstance,
 } from 'class-transformer'
 import { RegisterDto } from 'src/auth/dto/register.dto'
-import { PrismaService } from 'src/prisma.service'
+import { PrismaService } from 'src/prisma/prisma.service'
 import { UpdateUserDto, UserResponseDto } from './dto/user.dto'
 
 @Injectable()

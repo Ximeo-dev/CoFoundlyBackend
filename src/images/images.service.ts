@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import * as sharp from 'sharp'
-import { S3Service } from 'src/s3.service'
+import { S3Service } from 'src/s3/s3.service'
 import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 
