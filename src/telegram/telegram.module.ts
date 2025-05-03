@@ -5,10 +5,11 @@ import { getTelegramConfig } from 'src/config/telegram.config'
 import { TelegramUpdate } from './telegram.update'
 import { AuthModule } from 'src/auth/auth.module'
 import { TelegramService } from './telegram.service'
+import { TwoFactorModule } from 'src/two-factor/two-factor.module'
 
 @Module({
 	imports: [
-		forwardRef(() => AuthModule),
+		forwardRef(() => TwoFactorModule),
 		ConfigModule,
 		NestjsGrammyModule.forRootAsync({
 			imports: [ConfigModule],

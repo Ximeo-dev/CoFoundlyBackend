@@ -1,5 +1,4 @@
 import {
-	BadRequestException,
 	Body,
 	Controller,
 	Get,
@@ -11,19 +10,16 @@ import {
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
+import { Request, Response } from 'express'
+import { EmailService } from 'src/email/email.service'
+import { UserService } from 'src/user/user.service'
 import { AuthService } from './auth.service'
 import { LoginDto } from './dto/login.dto'
-import { Request, Response } from 'express'
 import { EmailAvailableDto, RegisterDto } from './dto/register.dto'
-import { UserService } from 'src/user/user.service'
 import {
 	ResetPasswordConfirmDto,
 	ResetPasswordRequestDto,
 } from './dto/reset-password.dto'
-import { EmailService } from 'src/email/email.service'
-import { Auth } from './decorators/auth.decorator'
-import { CurrentUser } from './decorators/user.decorator'
-import { TwoFactorAction } from 'src/types/2fa.types'
 
 @Controller('auth')
 export class AuthController {
@@ -131,26 +127,5 @@ export class AuthController {
 		const payload = await this.emailService.getPayloadFromToken(token)
 		await this.emailService.handleResetPasswordConfirmationToken(token, payload)
 		return this.emailService.confirmResetPassword(payload.id, dto)
-	}
-
-	@UsePipes(new ValidationPipe())
-	@HttpCode(200)
-	@Post('2fa-bind')
-	@Auth()
-	async get2FAToken(@CurrentUser('id') id: string) {
-		const securitySettings =
-			await this.userService.getUserSecuritySettingsById(id)
-
-		if (securitySettings?.twoFactorEnabled)
-			throw new BadRequestException('2FA уже подключена к вашему аккаунту')
-		return this.authService.issue2FAToken(id, TwoFactorAction.BIND)
-	}
-
-	@UsePipes(new ValidationPipe())
-	@HttpCode(200)
-	@Post('2fa-unbind')
-	@Auth()
-	async unbind2FA(@CurrentUser('id') id: string) {
-		return this.authService.unbind2FA(id)
 	}
 }
