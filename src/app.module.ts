@@ -11,6 +11,7 @@ import { ImagesModule } from './images/images.module';
 import { RedisModule } from './redis/redis.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { S3Module } from './s3/s3.module'
+import { TwoFactorModule } from './two-factor/two-factor.module';
 
 @Module({
 	imports: [
@@ -26,7 +27,8 @@ import { S3Module } from './s3/s3.module'
 		ImagesModule,
 		RedisModule,
 		PrismaModule,
-		S3Module
+		S3Module,
+		TwoFactorModule,
 	],
 	controllers: [AppController],
 })
