@@ -1,7 +1,6 @@
 import { InjectBot } from '@grammyjs/nestjs'
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { User } from '@prisma/client'
 import { Bot, Context } from 'grammy'
 import { TwoFactorService } from 'src/two-factor/two-factor.service'
 import {
@@ -9,10 +8,10 @@ import {
 	TwoFactorActionStatusEnum,
 	TwoFactorHandleResult,
 } from 'src/two-factor/types/two-factor.types'
-import { onlyAllowedUsers } from './middlewares/only-allowed-users'
+import { UserWithSecurity } from 'src/user/types/user.types'
 import { getActionText } from './action-texts'
 import { getErrorText } from './error-texts'
-import { UserWithSecurity } from 'src/types/user.types'
+import { onlyAllowedUsers } from './middlewares/only-allowed-users'
 
 @Injectable()
 export class TelegramService {
@@ -84,6 +83,14 @@ export class TelegramService {
 		if (!telegramId) {
 			return ctx.reply('⚠️ Не удалось определить ваш Telegram ID')
 		}
+
+		const isTelegramIdAvailable =
+			await this.twoFactorService.checkTelegramIdAvailable(
+				telegramId.toString(),
+			)
+
+		if (!isTelegramIdAvailable)
+			return ctx.reply('⚠️ Этот Telegram уже привязан к другому аккаунту')
 
 		const { result, user } = await this.twoFactorService.handleBindToken(token)
 

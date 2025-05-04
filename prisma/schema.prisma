@@ -41,10 +41,14 @@ model Profile {
   userId  String  @unique @db.Uuid
   user  User    @relation(fields: [userId], references: [id])
   bio String?
-  portfolio String?
+  portfolio String[]
   job String?
-  skills Skill[]
+  timezone String?
+  city String?
+  languages String[]
+  niches String[]
 
+  skills Skill[]
   likes BigInt @default(0)
 
   @@index([userId])
