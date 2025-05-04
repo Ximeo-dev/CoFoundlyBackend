@@ -137,7 +137,7 @@ export class TelegramService {
 			)
 		}
 
-		const result = await this.twoFactorService.unbind2FA(userId)
+		const result = await this.twoFactorService.handleUnbind2FA(userId)
 
 		if (result != TwoFactorHandleResult.Success)
 			return ctx.editMessageText(getErrorText(result, {}))
