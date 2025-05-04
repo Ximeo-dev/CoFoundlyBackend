@@ -1,11 +1,9 @@
 import {
-	BadRequestException,
 	forwardRef,
 	Inject,
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common'
-import { error } from 'console'
 import { randomBytes } from 'crypto'
 import { GRACE_TTL, TTL_BY_ACTION } from 'src/constants/constants'
 import { RedisService } from 'src/redis/redis.service'
@@ -16,7 +14,7 @@ import {
 	TwoFactorActionStatusEnum,
 	TwoFactorHandleResult,
 } from 'src/two-factor/types/two-factor.types'
-import { hasSecuritySettings } from 'src/types/user.guards'
+import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
 
 @Injectable()
@@ -148,6 +146,14 @@ export class TwoFactorService {
 		return status as TwoFactorActionStatus
 	}
 
+	async checkTelegramIdAvailable(telegramId: string) {
+		const existing = await this.userService.getSettingsByTelegramId(telegramId)
+
+		if (existing) return false
+
+		return true
+	}
+
 	async handleBindToken(token: string) {
 		const userId = await this.validateBindToken(token)
 
@@ -201,8 +207,7 @@ export class TwoFactorService {
 	async unbind2FA(userId: string) {
 		const user = await this.userService.getByIdWithSecuritySettings(userId)
 
-		if (!hasSecuritySettings(user))
-			return TwoFactorHandleResult.UserNotFound
+		if (!hasSecuritySettings(user)) return TwoFactorHandleResult.UserNotFound
 
 		await this.userService.set2FAStatus(userId, false)
 		return TwoFactorHandleResult.Success

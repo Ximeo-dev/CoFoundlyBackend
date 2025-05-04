@@ -59,6 +59,12 @@ export class UserService {
 		})
 	}
 
+	async getSettingsByTelegramId(telegramId: string) {
+		return this.prisma.securitySettings.findFirst({
+			where: { telegramId },
+		})
+	}
+
 	async create(dto: RegisterDto) {
 		const passwordHash = await hash(dto.password)
 
