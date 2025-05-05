@@ -165,7 +165,6 @@ export class EmailService {
 		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-email?token=${token}`
 
 		const variables = {
-			name: user.name,
 			confirmationUrl,
 		}
 

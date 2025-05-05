@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import * as sharp from 'sharp'
+import { ProfileService } from 'src/profile/profile.service'
 import { S3Service } from 'src/s3/s3.service'
-import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 
 export const AVATAR_SIZES = [512, 128, 64]
@@ -10,10 +10,14 @@ export const AVATAR_SIZES = [512, 128, 64]
 export class ImagesService {
 	constructor(
 		private readonly S3Service: S3Service,
-		private readonly userService: UserService,
+		private readonly profileService: ProfileService,
 	) {}
 
 	async processAndStoreAvatar(userId: string, buffer: Buffer) {
+		const profile = await this.profileService.getUserProfile(userId)
+
+		if (!profile) throw new NotFoundException('User profile not found')
+
 		const baseKey = `avatars/${userId}`
 
 		await Promise.all(
@@ -36,10 +40,14 @@ export class ImagesService {
 
 		const key512 = `${getEnvVar('IMAGE_HOST_URL')}/images/avatar/${userId}/512`
 
-		await this.userService.setUserAvatar(userId, key512)
+		await this.profileService.setUserAvatar(userId, key512)
 	}
 
 	async deleteAvatar(userId: string) {
+		const profile = await this.profileService.getUserProfile(userId)
+
+		if (!profile) throw new NotFoundException('User profile not found')
+
 		const baseKey = `avatars/${userId}`
 
 		await Promise.all(
@@ -48,17 +56,17 @@ export class ImagesService {
 			),
 		)
 
-		await this.userService.setUserAvatar(userId, null)
+		await this.profileService.setUserAvatar(userId, null)
 	}
 
 	async getAvatar(userId: string, size: number) {
-		const user = await this.userService.getById(userId)
+		const profile = await this.profileService.getUserProfile(userId)
 
-		if (!user) throw new NotFoundException('User not found')
+		if (!profile) throw new NotFoundException('User profile not found')
 
 		let key = `avatars/${userId}-${size}.webp`
 
-		if (!user.avatarUrl) throw new NotFoundException('User avatar not found')
+		if (!profile.avatarUrl) throw new NotFoundException('User avatar not found')
 
 		return this.S3Service.getFileStream(key)
 	}

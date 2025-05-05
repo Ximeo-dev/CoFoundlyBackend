@@ -3,6 +3,7 @@ import {
 	Controller,
 	Delete,
 	Get,
+	HttpCode,
 	Param,
 	ParseUUIDPipe,
 	Patch,
@@ -31,6 +32,7 @@ export class ProfileController {
 		return this.profileService.getUserProfile(id)
 	}
 
+	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@Post()
 	@Auth()
@@ -41,6 +43,7 @@ export class ProfileController {
 		return this.profileService.createUserProfile(id, dto)
 	}
 
+	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@Patch()
 	@Auth()
@@ -51,6 +54,7 @@ export class ProfileController {
 		return this.profileService.updateUserProfile(id, dto)
 	}
 
+	@HttpCode(200)
 	@Delete()
 	@Auth()
 	async deleteProfile(@CurrentUser('id') id: string) {

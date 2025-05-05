@@ -10,9 +10,6 @@ datasource db {
 model User {
   id               String            @id @default(uuid()) @db.Uuid
   email            String            @unique
-  name             String
-  age              Int?
-  avatarUrl        String?
   role             UserRole          @default(USER)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -27,7 +24,7 @@ model User {
   Chat             Chat[]            @relation("ChatParticipants")
   interests        Interest[]        @relation("InterestToUser")
   projectsJoined   Project[]         @relation("ProjectMembers")
-  profile          Profile?
+  profile           UserProfile?
 }
 
 enum UserRole {
@@ -36,20 +33,26 @@ enum UserRole {
   USER
 }
 
-model Profile {
+model UserProfile {
   id  Int     @id @default(autoincrement())
   userId  String  @unique @db.Uuid
   user  User    @relation(fields: [userId], references: [id])
-  bio String?
-  portfolio String[]
-  job String?
-  timezone String?
+  name String
+  birthDate DateTime @db.Date
+  avatarUrl String?
+  country String?
   city String?
+  timezone String?
+  bio String
+  job String
+  portfolio String[]
   languages String[]
-  niches String[]
-
+  // niches String[]
   skills Skill[]
-  likes BigInt @default(0)
+
+  likes Int @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@index([userId])
 }
@@ -57,7 +60,7 @@ model Profile {
 model Skill {
   id    Int         @id @default(autoincrement())
   name  String      @unique
-  profiles Profile[]
+  profiles UserProfile[]
 }
 
 model Interest {
