@@ -1,26 +1,49 @@
-import { Exclude, Expose, Transform } from 'class-transformer'
+import { Exclude, Expose, Transform, Type } from 'class-transformer'
 import {
 	ArrayMaxSize,
 	ArrayMinSize,
 	ArrayNotEmpty,
 	IsArray,
+	IsDate,
 	IsNotEmpty,
 	IsOptional,
 	IsString,
+	MaxDate,
+	MaxLength,
+	MinLength,
 } from 'class-validator'
+import { subYears } from 'date-fns'
 import { Flatten } from 'src/utils/flatten-transformer'
 
 export class CreateProfileDto {
 	@IsString()
+	@IsNotEmpty()
+	name: string
+
+	@IsDate()
+	@MaxDate(subYears(new Date(), 14), { message: 'Вам должно быть не менее 14 лет' })
+	@Type(() => Date)
+	birthDate: string
+
+	// @IsString()
+	// @IsNotEmpty()
+	// country: string
+
+	// @IsString()
+	// @IsNotEmpty()
+	// city: string
+
+	@MinLength(10)
+	@MaxLength(256)
+	@IsString()
 	bio: string
 
+	@IsNotEmpty()
 	@IsString()
 	job: string
 
 	@IsArray()
 	@ArrayNotEmpty()
-	@ArrayMinSize(1) // необязательно, указывает минимальное количество элементов
-	@ArrayMaxSize(100) // необязательно, указывает максимальное количество элементов
 	@Transform(({ value }) => value.map((v: string) => v.toLowerCase()))
 	@IsString({ each: true })
 	skills: string[]
@@ -29,9 +52,25 @@ export class CreateProfileDto {
 	@ArrayMaxSize(5)
 	@IsString({ each: true })
 	portfolio: string[]
+
+	@IsArray()
+	@ArrayMaxSize(5)
+	@IsString({ each: true })
+	languages: string[]
 }
 
 export class UpdateProfileDto {
+	@IsOptional()
+	@IsString()
+	@IsNotEmpty()
+	name?: string
+
+	@IsOptional()
+	@IsDate()
+	@MaxDate(subYears(new Date(), 14), { message: 'Вам должно быть не менее 14 лет' })
+	@Type(() => Date)
+	birthDate?: string
+
 	@IsOptional()
 	@IsString()
 	@Expose()
@@ -62,6 +101,12 @@ export class UpdateProfileDto {
 	@IsString({ each: true })
 	@Expose()
 	portfolio?: string[]
+
+	@IsOptional()
+	@IsArray()
+	@ArrayMaxSize(5)
+	@IsString({ each: true })
+	languages?: string[]
 }
 
 export class UserProfileResponseDto {
@@ -72,29 +117,32 @@ export class UserProfileResponseDto {
 	userId: string
 
 	@Expose()
-	bio: string
+	name: string
 
 	@Expose()
-	portfolio: string
+	birthDate: string
+
+	@Expose()
+	age: number
+
+	@Expose()
+	avatarUrl: string
+
+	@Expose()
+	bio: string
 
 	@Expose()
 	job: string
 
 	@Expose()
-	likes: string
+	portfolio: string[]
 
-	@Flatten('user')
 	@Expose()
-	age: number
-
-	@Flatten('user')
-	@Expose()
-	avatarUrl: string | null
-
-	@Flatten('user')
-	@Expose()
-	name: string
+	languages: string[]
 
 	@Expose()
 	skills: string[]
+
+	@Expose()
+	likes: number
 }

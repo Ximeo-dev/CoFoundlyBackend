@@ -8,6 +8,7 @@ import {
 	UpdateProfileDto,
 	UserProfileResponseDto,
 } from './dto/profile.dto'
+import { UploadPartCommand } from '@aws-sdk/client-s3'
 
 @Injectable()
 export class ProfileService {
@@ -17,41 +18,40 @@ export class ProfileService {
 		private readonly redis: RedisService,
 	) {}
 
-	async getUserProfile(userId: string) {
-		const cacheKey = `profile:${userId}`
+	private calculateAge(birthDate: Date) {
+		const birth = new Date(birthDate)
+		const today = new Date()
 
-		const cached = await this.redis.getObject<UserProfileResponseDto>(cacheKey)
-		if (cached) {
-			return cached
+		let age = today.getFullYear() - birth.getFullYear()
+		const m = today.getMonth() - birth.getMonth()
+		if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+			age--
 		}
 
-		const profile = await this.prisma.profile.findUnique({
+		return age
+	}
+
+	async getUserProfile(userId: string) {
+		const profile = await this.prisma.userProfile.findUnique({
 			where: { userId },
 			include: {
-				user: {
-					select: {
-						age: true,
-						avatarUrl: true,
-						name: true,
-					},
-				},
 				skills: true,
 			},
 		})
 
 		if (!profile) return null
 
-		const dto = plainToClass(UserProfileResponseDto, profile, {
+		const age = this.calculateAge(profile.birthDate)
+
+		const dto = plainToClass(UserProfileResponseDto, { ...profile, age }, {
 			excludeExtraneousValues: true,
 		})
-
-		await this.redis.setObject(cacheKey, dto, 180)
 
 		return dto
 	}
 
 	async createUserProfile(userId: string, dto: CreateProfileDto) {
-		const userProfile = await this.prisma.profile.findUnique({
+		const userProfile = await this.prisma.userProfile.findUnique({
 			where: { userId },
 		})
 
@@ -68,35 +68,36 @@ export class ProfileService {
 			},
 		})
 
-		const profile = await this.prisma.profile.create({
+		const profile = await this.prisma.userProfile.create({
 			data: {
 				userId: userId,
+				name: dto.name,
+				birthDate: dto.birthDate,
+				// city: ,
+				// country: ,
+				// timezone: ,
 				bio: dto.bio,
 				job: dto.job,
-				portfolio: dto.portfolio.join(';'),
+				portfolio: dto.portfolio,
+				languages: dto.languages,
 				skills: {
 					connect: existingSkills.map((skill) => ({ id: skill.id })),
 				},
 			},
 			include: {
-				user: {
-					select: {
-						age: true,
-						avatarUrl: true,
-						name: true,
-					},
-				},
 				skills: true,
 			},
 		})
 
-		return plainToClass(UserProfileResponseDto, profile, {
+		const age = this.calculateAge(profile.birthDate)
+
+		return plainToClass(UserProfileResponseDto, { ...profile, age }, {
 			excludeExtraneousValues: true,
 		})
 	}
 
 	async updateUserProfile(userId: string, dto: UpdateProfileDto) {
-		const userProfile = await this.prisma.profile.findUnique({
+		const userProfile = await this.prisma.userProfile.findUnique({
 			where: { userId },
 		})
 
@@ -106,10 +107,6 @@ export class ProfileService {
 			(instanceToPlain(dto, {
 				exposeUnsetFields: false,
 			}) as Record<string, any>) || {}
-
-		if (baseData.portfolio) {
-			baseData.portfolio = baseData.portfolio.join(';')
-		}
 
 		let skillsData = {}
 		if (baseData.skills && baseData.skills.length > 0) {
@@ -129,7 +126,7 @@ export class ProfileService {
 			delete baseData.skills
 		}
 
-		const updatedProfile = this.prisma.profile.update({
+		const updatedProfile = await this.prisma.userProfile.update({
 			where: { userId },
 			data: {
 				...baseData,
@@ -137,32 +134,36 @@ export class ProfileService {
 			},
 			include: {
 				skills: true,
-				user: {
-					select: {
-						name: true,
-						age: true,
-						avatarUrl: true,
-					},
-				},
 			},
 		})
 
-		return plainToClass(UserProfileResponseDto, updatedProfile, {
+		const age = this.calculateAge(updatedProfile.birthDate)
+
+		return plainToClass(UserProfileResponseDto, {...updatedProfile, age}, {
 			excludeExtraneousValues: true,
 		})
 	}
 
 	async deleteUserProfile(userId: string) {
-		const userProfile = await this.prisma.profile.findUnique({
+		const userProfile = await this.prisma.userProfile.findUnique({
 			where: { userId },
 		})
 
 		if (!userProfile) throw new BadRequestException('Profile not exist')
 
-		await this.prisma.profile.delete({
+		await this.prisma.userProfile.delete({
 			where: { userId },
 		})
 
 		return true
+	}
+
+	async setUserAvatar(id: string, avatarUrl: string | null) {
+		await this.prisma.userProfile.update({
+			where: { userId: id },
+			data: {
+				avatarUrl,
+			},
+		})
 	}
 }

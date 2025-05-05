@@ -3,9 +3,10 @@ import { UserModule } from 'src/user/user.module'
 import { ImagesController } from './images.controller'
 import { ImagesService } from './images.service'
 import { S3Module } from 'src/s3/s3.module'
+import { ProfileModule } from 'src/profile/profile.module'
 
 @Module({
-	imports: [UserModule, S3Module],
+	imports: [ProfileModule, S3Module],
 	controllers: [ImagesController],
 	providers: [ImagesService],
 })

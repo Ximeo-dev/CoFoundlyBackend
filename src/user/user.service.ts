@@ -71,7 +71,6 @@ export class UserService {
 		return this.prisma.user.create({
 			data: {
 				email: dto.email.toLowerCase(),
-				name: dto.name,
 				securitySettings: passwordHash
 					? {
 							create: {
@@ -94,7 +93,7 @@ export class UserService {
 		if (!user) throw new BadRequestException('User not exist')
 
 		await this.prisma.$transaction([
-			this.prisma.profile.deleteMany({ where: { userId: userId } }),
+			this.prisma.userProfile.deleteMany({ where: { userId: userId } }),
 			this.prisma.securitySettings.deleteMany({ where: { userId: userId } }),
 			this.prisma.user.delete({ where: { id: userId } }),
 		])
@@ -144,15 +143,6 @@ export class UserService {
 
 		return plainToClass(UserResponseDto, updatedData, {
 			excludeExtraneousValues: true,
-		})
-	}
-
-	async setUserAvatar(id: string, avatarUrl: string | null) {
-		await this.prisma.user.update({
-			where: { id },
-			data: {
-				avatarUrl,
-			},
 		})
 	}
 
