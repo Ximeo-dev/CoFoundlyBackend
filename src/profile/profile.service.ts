@@ -8,7 +8,6 @@ import {
 	UpdateProfileDto,
 	UserProfileResponseDto,
 } from './dto/profile.dto'
-import { UploadPartCommand } from '@aws-sdk/client-s3'
 
 @Injectable()
 export class ProfileService {
@@ -44,6 +43,27 @@ export class ProfileService {
 		const age = this.calculateAge(profile.birthDate)
 
 		const dto = plainToClass(UserProfileResponseDto, { ...profile, age }, {
+			excludeExtraneousValues: true,
+		})
+
+		return dto
+	}
+
+	async getForeignUserProfile(userId: string) {
+		const profile = await this.prisma.userProfile.findUnique({
+			where: { userId },
+			include: {
+				skills: true,
+			},
+		})
+
+		if (!profile) return null
+
+		const { birthDate, ...rest } = profile
+
+		const age = this.calculateAge(birthDate)
+
+		const dto = plainToClass(UserProfileResponseDto, { ...rest, age }, {
 			excludeExtraneousValues: true,
 		})
 

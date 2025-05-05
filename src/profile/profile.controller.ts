@@ -29,7 +29,7 @@ export class ProfileController {
 	@Get(':id')
 	@Auth()
 	async getForeignProfile(@Param('id', ParseUUIDPipe) id: string) {
-		return this.profileService.getUserProfile(id)
+		return this.profileService.getForeignUserProfile(id)
 	}
 
 	@HttpCode(200)
