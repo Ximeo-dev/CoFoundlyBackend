@@ -4,13 +4,17 @@ import {
 	InternalServerErrorException,
 	NotFoundException,
 } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { JwtService, TokenExpiredError } from '@nestjs/jwt'
 import { verify } from 'argon2'
+import { randomBytes } from 'crypto'
 import * as nodemailer from 'nodemailer'
 import { ResetPasswordConfirmDto } from 'src/auth/dto/reset-password.dto'
+import { TTL_BY_ACTION } from 'src/constants/constants'
 import { EmailAlreadyConfirmedException } from 'src/exceptions/EmailAlreadyConfirmedException'
+import { RedisService } from 'src/redis/redis.service'
+import { TwoFactorAction } from 'src/two-factor/types/two-factor.types'
 import { ChangeEmailDto } from 'src/user/dto/user.dto'
+import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 import { fillHtmlTemplate } from 'src/utils/fillHtmlTemplate'
@@ -40,7 +44,31 @@ export class EmailService {
 	constructor(
 		private readonly jwt: JwtService,
 		private readonly userService: UserService,
+		private readonly redis: RedisService,
 	) {}
+
+	private generateToken(): string {
+		return randomBytes(32).toString('hex')
+	}
+
+	private actionEmailKey(userId: string, action: TwoFactorAction) {
+		return `email:${action}:${userId}`
+	}
+
+	async issueToken(userId: string, action: TwoFactorAction) {
+		const user = await this.userService.getByIdWithSecuritySettings(userId)
+
+		if (!hasSecuritySettings(user))
+			throw new NotFoundException('User not found')
+
+		const key = this.actionEmailKey(userId, action)
+		const ttl = TTL_BY_ACTION[action] ?? 60
+		const token = this.generateToken()
+
+		await this.redis.set(key, token, ttl)
+
+		return token
+	}
 
 	async getPayloadFromToken(token: string) {
 		try {

@@ -27,7 +27,7 @@ export class ImagesController {
 	@Post('avatar')
 	@UseInterceptors(
 		FileInterceptor('avatar', {
-			limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+			limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
 		}),
 	)
 	@Auth()
