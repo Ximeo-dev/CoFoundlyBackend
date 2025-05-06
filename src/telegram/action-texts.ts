@@ -1,4 +1,4 @@
-import * as Handlebars from 'handlebars'
+import { compile } from 'handlebars'
 import {
 	TwoFactorAction,
 	TwoFactorActionStatus,
@@ -32,5 +32,5 @@ export function getActionText(
 	const template = ActionTexts[action]?.[status]
 	if (!template) return 'Неизвестное действие'
 
-	return Handlebars.compile(template)(context)
+	return compile(template)(context)
 }

@@ -11,21 +11,19 @@ import {
 import { UserWithSecurity } from 'src/user/types/user.types'
 import { getActionText } from './action-texts'
 import { getErrorText } from './error-texts'
-import { onlyAllowedUsers } from './middlewares/only-allowed-users'
+import { onlyAllowedUsersMiddleware } from './middlewares/only-allowed-users'
 
 @Injectable()
 export class TelegramService {
-	private readonly BOT_TOKEN: string
-
 	constructor(
 		@InjectBot() private readonly bot: Bot<Context>,
 		private readonly configService: ConfigService,
 		@Inject(forwardRef(() => TwoFactorService))
 		private readonly twoFactorService: TwoFactorService,
 	) {
-		this.BOT_TOKEN = configService.getOrThrow<string>('TELEGRAM_BOT_TOKEN')
-		if (configService.getOrThrow<string>('NODE_ENV') === 'development')
-			bot.use(onlyAllowedUsers)
+		if (configService.getOrThrow<string>('NODE_ENV') === 'development') {
+			bot.use(onlyAllowedUsersMiddleware)
+		}
 
 		bot.api
 			.setMyCommands([

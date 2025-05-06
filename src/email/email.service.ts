@@ -4,9 +4,10 @@ import {
 	InternalServerErrorException,
 	NotFoundException,
 } from '@nestjs/common'
-import { JwtService, TokenExpiredError } from '@nestjs/jwt'
+import { JwtService } from '@nestjs/jwt'
 import { verify } from 'argon2'
 import { randomBytes } from 'crypto'
+import { compile } from 'handlebars'
 import * as nodemailer from 'nodemailer'
 import { ResetPasswordConfirmDto } from 'src/auth/dto/reset-password.dto'
 import { TTL_BY_ACTION } from 'src/constants/constants'
@@ -19,9 +20,10 @@ import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 import { fillHtmlTemplate } from 'src/utils/fillHtmlTemplate'
 import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
-import { parseBool } from 'src/utils/parseBool'
-import { safeCompare } from 'src/utils/safeCompare'
+import { parseBool } from 'src/utils/parse-bool'
+import { safeCompare } from 'src/utils/safe-compare'
 import * as zxcvbn from 'zxcvbn'
+
 
 interface TokenPayload {
 	id: string
@@ -164,7 +166,7 @@ export class EmailService {
 
 		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-email?token=${token}`
 
-		const variables = {
+		const context = {
 			confirmationUrl,
 		}
 
@@ -182,7 +184,7 @@ export class EmailService {
 				from: `"CoFoundly" <${getEnvVar('EMAIL_USER')}>`,
 				to: user.email,
 				subject: 'Подтверждение эл. почты',
-				html: fillHtmlTemplate(template, variables),
+				html: compile(template)(context),
 			})
 			.catch((e) => console.log(e))
 	}
@@ -214,7 +216,7 @@ export class EmailService {
 
 		const confirmationUrl = `http://${getEnvVar('FRONTEND_URL')}/reset-password/confirm?token=${token}`
 
-		const variables = {
+		const context = {
 			email: user.email,
 			confirmationUrl,
 		}
@@ -233,7 +235,7 @@ export class EmailService {
 				from: `"CoFoundly" <${getEnvVar('EMAIL_USER')}>`,
 				to: user.email,
 				subject: 'Подтверждение восстановления пароля',
-				html: fillHtmlTemplate(template, variables),
+				html: compile(template)(context),
 			})
 			.catch((e) => console.log(e))
 	}
@@ -278,7 +280,7 @@ export class EmailService {
 
 		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-change-email?token=${token}`
 
-		const variables = {
+		const context = {
 			oldEmail: user.email,
 			newEmail: dto.newEmail,
 			confirmationUrl,
@@ -298,7 +300,7 @@ export class EmailService {
 				from: `"CoFoundly" <${getEnvVar('EMAIL_USER')}>`,
 				to: dto.newEmail,
 				subject: 'Подтверждение смены эл. почты',
-				html: fillHtmlTemplate(template, variables),
+				html: compile(template)(context),
 			})
 			.catch((e) => console.log(e))
 	}
