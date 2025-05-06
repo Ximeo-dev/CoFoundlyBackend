@@ -42,9 +42,13 @@ export class ProfileService {
 
 		const age = this.calculateAge(profile.birthDate)
 
-		const dto = plainToClass(UserProfileResponseDto, { ...profile, age }, {
-			excludeExtraneousValues: true,
-		})
+		const dto = plainToClass(
+			UserProfileResponseDto,
+			{ ...profile, age },
+			{
+				excludeExtraneousValues: true,
+			},
+		)
 
 		return dto
 	}
@@ -63,9 +67,13 @@ export class ProfileService {
 
 		const age = this.calculateAge(birthDate)
 
-		const dto = plainToClass(UserProfileResponseDto, { ...rest, age }, {
-			excludeExtraneousValues: true,
-		})
+		const dto = plainToClass(
+			UserProfileResponseDto,
+			{ ...rest, age },
+			{
+				excludeExtraneousValues: true,
+			},
+		)
 
 		return dto
 	}
@@ -111,9 +119,13 @@ export class ProfileService {
 
 		const age = this.calculateAge(profile.birthDate)
 
-		return plainToClass(UserProfileResponseDto, { ...profile, age }, {
-			excludeExtraneousValues: true,
-		})
+		return plainToClass(
+			UserProfileResponseDto,
+			{ ...profile, age },
+			{
+				excludeExtraneousValues: true,
+			},
+		)
 	}
 
 	async updateUserProfile(userId: string, dto: UpdateProfileDto) {
@@ -159,9 +171,13 @@ export class ProfileService {
 
 		const age = this.calculateAge(updatedProfile.birthDate)
 
-		return plainToClass(UserProfileResponseDto, {...updatedProfile, age}, {
-			excludeExtraneousValues: true,
-		})
+		return plainToClass(
+			UserProfileResponseDto,
+			{ ...updatedProfile, age },
+			{
+				excludeExtraneousValues: true,
+			},
+		)
 	}
 
 	async deleteUserProfile(userId: string) {

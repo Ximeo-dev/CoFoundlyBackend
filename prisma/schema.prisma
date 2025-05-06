@@ -58,9 +58,11 @@ model UserProfile {
 }
 
 model Skill {
-  id    Int         @id @default(autoincrement())
-  name  String      @unique
+  id    String @id
+  name  String @unique @db.VarChar(255)
   profiles UserProfile[]
+
+  @@index([name])
 }
 
 model Interest {
