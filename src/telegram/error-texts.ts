@@ -1,4 +1,4 @@
-import * as Handlebars from 'handlebars'
+import { compile } from 'handlebars'
 import { TwoFactorHandleResult } from 'src/two-factor/types/two-factor.types'
 
 export const ErrorTexts = {
@@ -13,5 +13,5 @@ export function getErrorText(error: TwoFactorHandleResult, context: object) {
 	const template = ErrorTexts[error]
 	if (!template) return 'Неизвестное действие'
 
-	return Handlebars.compile(template)(context)
+	return compile(template)(context)
 }
