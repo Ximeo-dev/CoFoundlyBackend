@@ -8,12 +8,12 @@ import {
 	IsNotEmpty,
 	IsOptional,
 	IsString,
+	IsUrl,
 	MaxDate,
 	MaxLength,
 	MinLength,
 } from 'class-validator'
 import { subYears } from 'date-fns'
-import { Flatten } from 'src/utils/flatten-transformer'
 
 export class CreateProfileDto {
 	@IsString()
@@ -50,7 +50,7 @@ export class CreateProfileDto {
 
 	@IsArray()
 	@ArrayMaxSize(5)
-	@IsString({ each: true })
+	@IsUrl({ protocols: ['https'] }, { each: true })
 	portfolio: string[]
 
 	@IsArray()
@@ -86,8 +86,8 @@ export class UpdateProfileDto {
 	@IsOptional()
 	@IsArray()
 	@ArrayNotEmpty()
-	@ArrayMinSize(1) // необязательно, указывает минимальное количество элементов
-	@ArrayMaxSize(100) // необязательно, указывает максимальное количество элементов
+	@ArrayMinSize(1)
+	@ArrayMaxSize(20)
 	@Transform(({ value }) =>
 		Array.isArray(value) ? value.map((v: string) => v.toLowerCase()) : value,
 	)
@@ -98,7 +98,7 @@ export class UpdateProfileDto {
 	@IsOptional()
 	@IsArray()
 	@ArrayMaxSize(5)
-	@IsString({ each: true })
+	@IsUrl({ protocols: ['https'] }, { each: true })
 	@Expose()
 	portfolio?: string[]
 

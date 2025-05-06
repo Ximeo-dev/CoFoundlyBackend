@@ -4,11 +4,13 @@ import {
 	InternalServerErrorException,
 	NotFoundException,
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { verify } from 'argon2'
 import { randomBytes } from 'crypto'
 import { compile } from 'handlebars'
 import * as nodemailer from 'nodemailer'
+import SMTPTransport from 'nodemailer/lib/smtp-transport'
 import { ResetPasswordConfirmDto } from 'src/auth/dto/reset-password.dto'
 import { TTL_BY_ACTION } from 'src/constants/constants'
 import { EmailAlreadyConfirmedException } from 'src/exceptions/EmailAlreadyConfirmedException'
@@ -18,12 +20,9 @@ import { ChangeEmailDto } from 'src/user/dto/user.dto'
 import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
-import { fillHtmlTemplate } from 'src/utils/fillHtmlTemplate'
 import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
-import { parseBool } from 'src/utils/parse-bool'
 import { safeCompare } from 'src/utils/safe-compare'
 import * as zxcvbn from 'zxcvbn'
-
 
 interface TokenPayload {
 	id: string
@@ -32,22 +31,41 @@ interface TokenPayload {
 
 @Injectable()
 export class EmailService {
-	private transporter = nodemailer.createTransport({
-		host: getEnvVar('EMAIL_HOST'),
-		port: getEnvVar('EMAIL_PORT'),
-		secure: parseBool(getEnvVar('EMAIL_SECURE')),
-		auth: {
-			user: getEnvVar('EMAIL_USER'),
-			pass: getEnvVar('EMAIL_PASS'),
-		},
-		// logger: true,
-	})
+	private transporter: nodemailer.Transporter
+	private emailUsername = 'CoFoundly'
+	private emailUser: string
 
 	constructor(
+		private readonly configService: ConfigService,
 		private readonly jwt: JwtService,
 		private readonly userService: UserService,
 		private readonly redis: RedisService,
-	) {}
+	) {
+		this.emailUser = configService.getOrThrow<string>('EMAIL_USER')
+		this.transporter = nodemailer.createTransport({
+			host: configService.getOrThrow<string>('EMAIL_HOST'),
+			port: configService.getOrThrow<number>('EMAIL_PORT'),
+			secure: configService.getOrThrow<boolean>('EMAIL_SECURE'),
+			auth: {
+				user: this.emailUser,
+				pass: configService.getOrThrow<string>('EMAIL_PASS'),
+			},
+			// logger: true,
+		} as SMTPTransport.Options)
+	}
+
+	async sendMail(to: string, subject: string, html: string) {
+		try {
+			await this.transporter.sendMail({
+				from: `"${this.emailUsername}" ${this.emailUser}`,
+				to,
+				subject,
+				html,
+			})
+		} catch (err) {
+			console.error('Error sending email:', err)
+		}
+	}
 
 	private generateToken(): string {
 		return randomBytes(32).toString('hex')
