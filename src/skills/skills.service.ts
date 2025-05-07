@@ -14,25 +14,18 @@ export class SkillsService {
 	private readonly logger = new Logger(SkillsService.name)
 	private readonly SKILLS_CACHE_KEY = 'skills:all'
 	private readonly CACHE_TTL = 600
+	private readonly MAX_LIMIT = 40
 
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly redis: RedisService,
 	) {}
 
-	async findSkillsForAutocomplete(query: string, limit: number = 10) {
+	async findSkillsForAutocomplete(query: string = '', limit: number = 10) {
 		const trimmedQuery = query.trim().toLowerCase()
+		// limit = Math.min(limit, this.MAX_LIMIT)
 
-		let skills: Skill[] | null
-		try {
-			skills = await this.redis.getObject<Skill[]>(this.SKILLS_CACHE_KEY)
-			if (skills) {
-				this.logger.debug(`Cache hit for ${this.SKILLS_CACHE_KEY}`)
-			}
-		} catch (error) {
-			skills = null
-			this.logger.error(`Failed to connect to Redis: ${error.message}`)
-		}
+		let skills = await this.redis.getObject<Skill[]>(this.SKILLS_CACHE_KEY)
 
 		if (!skills) {
 			this.logger.debug('Cache miss, fetching skills from database')
@@ -50,7 +43,7 @@ export class SkillsService {
 			} catch (error) {
 				this.logger.error(`Failed to cache skills to Redis: ${error.message}`)
 			}
-		}
+		}	
 
 		if (!trimmedQuery) {
 			return skills.slice(0, limit)

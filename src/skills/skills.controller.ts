@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common'
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	HttpCode,
+	Param,
+	Post,
+	Query,
+	UseGuards,
+	UsePipes,
+	ValidationPipe,
+} from '@nestjs/common'
 import { SkillsService } from './skills.service'
 import { SkillDto } from './dto/skills.dto'
 import { Roles } from 'src/auth/decorators/roles.decorator'
