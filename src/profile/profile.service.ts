@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import {
+	BadRequestException,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common'
 import { instanceToPlain, plainToClass } from 'class-transformer'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { RedisService } from 'src/redis/redis.service'
@@ -30,52 +34,42 @@ export class ProfileService {
 		return age
 	}
 
-	async getUserProfile(userId: string) {
-		const profile = await this.prisma.userProfile.findUnique({
-			where: { userId },
-			include: {
-				skills: true,
-			},
-		})
+	async getUserProfile(userId: string, excludeBirthDate: boolean = false) {
+		try {
+			const profile = await this.prisma.userProfile.findUnique({
+				where: { userId },
+				include: {
+					skills: true
+				}
+			})
 
-		if (!profile) return null
+			if (!profile) {
+				throw new NotFoundException(
+					`Profile with userId ${userId} does not exist`,
+				)
+			}
 
-		const age = this.calculateAge(profile.birthDate)
+			const age = profile.birthDate
+				? this.calculateAge(profile.birthDate)
+				: null
 
-		const dto = plainToClass(
-			UserProfileResponseDto,
-			{ ...profile, age },
-			{
+			const responseData = excludeBirthDate
+				? { ...profile, birthDate: undefined, age }
+				: { ...profile, age }
+
+			return plainToClass(UserProfileResponseDto, responseData, {
 				excludeExtraneousValues: true,
-			},
-		)
-
-		return dto
+			})
+		} catch (error) {
+			if (error instanceof NotFoundException) {
+				throw error
+			}
+			throw new BadRequestException('Failed to retrieve profile')
+		}
 	}
 
 	async getForeignUserProfile(userId: string) {
-		const profile = await this.prisma.userProfile.findUnique({
-			where: { userId },
-			include: {
-				skills: true,
-			},
-		})
-
-		if (!profile) return null
-
-		const { birthDate, ...rest } = profile
-
-		const age = this.calculateAge(birthDate)
-
-		const dto = plainToClass(
-			UserProfileResponseDto,
-			{ ...rest, age },
-			{
-				excludeExtraneousValues: true,
-			},
-		)
-
-		return dto
+		return this.getUserProfile(userId, true)
 	}
 
 	async createUserProfile(userId: string, dto: CreateProfileDto) {
@@ -83,49 +77,70 @@ export class ProfileService {
 			where: { userId },
 		})
 
-		if (userProfile) throw new BadRequestException('Profile already exist')
+		if (userProfile) {
+			throw new BadRequestException('Profile already exists')
+		}
 
-		const existingSkills = await this.prisma.skill.findMany({
-			where: {
-				name: {
-					in: dto.skills,
+		// Обработка навыков
+		let skillsConnect = {}
+		if (dto.skills?.length > 0) {
+			const existingSkills = await this.prisma.skill.findMany({
+				where: {
+					id: {
+						in: dto.skills,
+					},
 				},
-			},
-			select: {
-				id: true,
-			},
-		})
+				select: { id: true },
+			})
 
-		const profile = await this.prisma.userProfile.create({
-			data: {
-				userId: userId,
-				name: dto.name,
-				birthDate: dto.birthDate,
-				// city: ,
-				// country: ,
-				// timezone: ,
-				bio: dto.bio,
-				job: dto.job,
-				portfolio: dto.portfolio,
-				languages: dto.languages,
+			// Проверка, что все навыки существуют
+			if (existingSkills.length !== dto.skills.length) {
+				throw new BadRequestException('One or more skills do not exist')
+			}
+
+			skillsConnect = {
 				skills: {
-					connect: existingSkills.map((skill) => ({ id: skill.id })),
+					connect: existingSkills,
 				},
-			},
-			include: {
-				skills: true,
-			},
-		})
+			}
+		}
 
-		const age = this.calculateAge(profile.birthDate)
+		try {
+			const profile = await this.prisma.userProfile.create({
+				data: {
+					userId,
+					name: dto.name,
+					birthDate: new Date(dto.birthDate),
+					bio: dto.bio,
+					job: dto.job,
+					portfolio: dto.portfolio,
+					languages: dto.languages,
+					...skillsConnect,
+				},
+				include: {
+					skills: {
+						select: { id: true, name: true },
+					},
+				},
+			})
 
-		return plainToClass(
-			UserProfileResponseDto,
-			{ ...profile, age },
-			{
-				excludeExtraneousValues: true,
-			},
-		)
+			const age = profile.birthDate
+				? this.calculateAge(profile.birthDate)
+				: null
+
+			return plainToClass(
+				UserProfileResponseDto,
+				{ ...profile, age },
+				{
+					excludeExtraneousValues: true,
+				},
+			)
+		} catch (error) {
+			if (error.code === 'P2002') {
+				throw new BadRequestException('Profile with this userId already exists')
+			}
+			throw error
+		}
 	}
 
 	async updateUserProfile(userId: string, dto: UpdateProfileDto) {
@@ -133,65 +148,93 @@ export class ProfileService {
 			where: { userId },
 		})
 
-		if (!userProfile) throw new BadRequestException('Profile not exist')
+		if (!userProfile) {
+			throw new BadRequestException('Profile does not exist')
+		}
 
-		const baseData =
-			(instanceToPlain(dto, {
-				exposeUnsetFields: false,
-			}) as Record<string, any>) || {}
+		const baseData = instanceToPlain(dto, {
+			exposeUnsetFields: false,
+		}) as Record<string, any>
 
-		let skillsData = {}
-		if (baseData.skills && baseData.skills.length > 0) {
+		// Обработка навыков
+		let skillsUpdate = {}
+		if (baseData.skills?.length > 0) {
 			const existingSkills = await this.prisma.skill.findMany({
 				where: {
-					name: {
+					id: {
 						in: baseData.skills,
 					},
 				},
 				select: { id: true },
 			})
-			skillsData = {
+
+			if (existingSkills.length !== baseData.skills.length) {
+				throw new BadRequestException('One or more skills do not exist')
+			}
+
+			skillsUpdate = {
 				skills: {
-					connect: existingSkills.map((skill) => ({ id: skill.id })),
+					set: existingSkills,
 				},
 			}
-			delete baseData.skills
+		} else if (baseData.skills?.length === 0) {
+			skillsUpdate = {
+				skills: {
+					set: [],
+				},
+			}
 		}
 
-		const updatedProfile = await this.prisma.userProfile.update({
-			where: { userId },
-			data: {
-				...baseData,
-				...skillsData,
-			},
-			include: {
-				skills: true,
-			},
-		})
+		// Удаляем skills из baseData, чтобы избежать конфликта
+		delete baseData.skills
 
-		const age = this.calculateAge(updatedProfile.birthDate)
+		try {
+			const updatedProfile = await this.prisma.userProfile.update({
+				where: { userId },
+				data: {
+					...baseData,
+					...skillsUpdate,
+				},
+				include: {
+					skills: {
+						select: { id: true, name: true },
+					},
+				},
+			})
 
-		return plainToClass(
-			UserProfileResponseDto,
-			{ ...updatedProfile, age },
-			{
-				excludeExtraneousValues: true,
-			},
-		)
+			const age = updatedProfile.birthDate
+				? this.calculateAge(updatedProfile.birthDate)
+				: null
+
+			return plainToClass(
+				UserProfileResponseDto,
+				{ ...updatedProfile, age },
+				{
+					excludeExtraneousValues: true,
+				},
+			)
+		} catch (error) {
+			if (error.code === 'P2025') {
+				throw new BadRequestException('Profile not found')
+			}
+			throw error
+		}
 	}
 
 	async deleteUserProfile(userId: string) {
-		const userProfile = await this.prisma.userProfile.findUnique({
-			where: { userId },
-		})
-
-		if (!userProfile) throw new BadRequestException('Profile not exist')
-
-		await this.prisma.userProfile.delete({
-			where: { userId },
-		})
-
-		return true
+		try {
+			await this.prisma.userProfile.delete({
+				where: { userId },
+			})
+			return { userId, deleted: true }
+		} catch (error) {
+			if (error.code === 'P2025') {
+				throw new NotFoundException(
+					`Profile with userId ${userId} does not exist`,
+				)
+			}
+			throw error
+		}
 	}
 
 	async setUserAvatar(id: string, avatarUrl: string | null) {

@@ -13,7 +13,7 @@ import { Skill } from '@prisma/client'
 export class SkillsService {
 	private readonly logger = new Logger(SkillsService.name)
 	private readonly SKILLS_CACHE_KEY = 'skills:all'
-	private readonly CACHE_TTL = 600
+	private readonly CACHE_TTL = 300
 	private readonly MAX_LIMIT = 40
 
 	constructor(
@@ -30,8 +30,11 @@ export class SkillsService {
 		if (!skills) {
 			this.logger.debug('Cache miss, fetching skills from database')
 			skills = await this.prisma.skill.findMany({
-				select: { id: true, name: true },
-				orderBy: { name: 'asc' },
+				select: {
+					id: true,
+					name: true,
+				},
+				orderBy: [{ profiles: { _count: 'desc' } }, { name: 'asc' }],
 			})
 			try {
 				await this.redis.setObject(
@@ -43,7 +46,7 @@ export class SkillsService {
 			} catch (error) {
 				this.logger.error(`Failed to cache skills to Redis: ${error.message}`)
 			}
-		}	
+		}
 
 		if (!trimmedQuery) {
 			return skills.slice(0, limit)
@@ -101,7 +104,9 @@ export class SkillsService {
 			return skill
 		} catch (error) {
 			if (error.code === 'P2002') {
-				throw new BadRequestException(`Skill with name ${dto.name} already exists`)
+				throw new BadRequestException(
+					`Skill with name ${dto.name} already exists`,
+				)
 			}
 			throw error
 		}

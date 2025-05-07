@@ -21,6 +21,7 @@ import { Auth } from 'src/auth/decorators/auth.decorator'
 export class SkillsController {
 	constructor(private readonly skillsService: SkillsService) {}
 
+	//Сейчас излишне, все 500 навыков спокойно можно получить разом
 	@Get('autocomplete')
 	@Auth()
 	async autocomplete(@Query('q') query: string, @Query('limit') limit: number) {
