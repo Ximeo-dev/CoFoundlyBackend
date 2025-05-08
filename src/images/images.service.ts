@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import * as sharp from 'sharp'
 import { ProfileService } from 'src/profile/profile.service'
 import { S3Service } from 'src/s3/s3.service'
-import { getEnvVar } from 'src/utils/env'
 
 export const AVATAR_SIZES = [512, 128, 64]
 
@@ -37,10 +36,6 @@ export class ImagesService {
 		})
 
 		await Promise.all(uploadTasks)
-
-		const key512 = `${getEnvVar('IMAGE_HOST_URL')}/images/avatar/${userId}/512`
-
-		await this.profileService.setUserAvatar(userId, key512)
 	}
 
 	async deleteAvatar(userId: string) {
@@ -55,8 +50,6 @@ export class ImagesService {
 				this.S3Service.delete(`${baseKey}-${size}.webp`).catch(() => null),
 			),
 		)
-
-		await this.profileService.setUserAvatar(userId, null)
 	}
 
 	async getAvatar(userId: string, size: number) {
@@ -65,8 +58,6 @@ export class ImagesService {
 		if (!profile) throw new NotFoundException('User profile not found')
 
 		let key = `avatars/${userId}-${size}.webp`
-
-		if (!profile.avatarUrl) throw new NotFoundException('User avatar not found')
 
 		return this.S3Service.getFileStream(key)
 	}

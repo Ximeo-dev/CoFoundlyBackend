@@ -34,13 +34,59 @@ export class ProfileService {
 		return age
 	}
 
+	private async getRelationData(
+		fieldName: string,
+		dto: any,
+		modelName: string,
+		operation: 'create' | 'update',
+	) {
+		if (dto[fieldName] !== undefined) {
+			if (Array.isArray(dto[fieldName]) && dto[fieldName].length > 0) {
+				const existingRecords = await this.prisma[modelName].findMany({
+					where: {
+						name: {
+							in: dto[fieldName],
+						},
+					},
+					select: { id: true, name: true },
+				})
+
+				if (existingRecords.length !== dto[fieldName].length) {
+					throw new BadRequestException(`One or more ${fieldName} do not exist`)
+				}
+
+				const relationType = operation === 'create' ? 'connect' : 'set'
+				return {
+					[fieldName]: {
+						[relationType]: existingRecords.map((record) => ({
+							id: record.id,
+						})),
+					},
+				}
+			} else if (
+				operation === 'update' &&
+				Array.isArray(dto[fieldName]) &&
+				dto[fieldName].length === 0
+			) {
+				return {
+					[fieldName]: {
+						set: [],
+					},
+				}
+			}
+		}
+		return {}
+	}
+
 	async getUserProfile(userId: string, excludeBirthDate: boolean = false) {
 		try {
 			const profile = await this.prisma.userProfile.findUnique({
 				where: { userId },
 				include: {
-					skills: true
-				}
+					skills: {
+						select: { name: true }
+					}
+				},
 			})
 
 			if (!profile) {
@@ -81,29 +127,24 @@ export class ProfileService {
 			throw new BadRequestException('Profile already exists')
 		}
 
-		// Обработка навыков
-		let skillsConnect = {}
-		if (dto.skills?.length > 0) {
-			const existingSkills = await this.prisma.skill.findMany({
-				where: {
-					id: {
-						in: dto.skills,
-					},
-				},
-				select: { id: true },
-			})
-
-			// Проверка, что все навыки существуют
-			if (existingSkills.length !== dto.skills.length) {
-				throw new BadRequestException('One or more skills do not exist')
-			}
-
-			skillsConnect = {
-				skills: {
-					connect: existingSkills,
-				},
-			}
-		}
+		const skillsData = await this.getRelationData(
+			'skills',
+			dto,
+			'skill',
+			'create',
+		)
+		const languagesData = await this.getRelationData(
+			'languages',
+			dto,
+			'language',
+			'create',
+		)
+		const industriesData = await this.getRelationData(
+			'industries',
+			dto,
+			'industry',
+			'create',
+		)
 
 		try {
 			const profile = await this.prisma.userProfile.create({
@@ -114,12 +155,13 @@ export class ProfileService {
 					bio: dto.bio,
 					job: dto.job,
 					portfolio: dto.portfolio,
-					languages: dto.languages,
-					...skillsConnect,
+					...skillsData,
+					...languagesData,
+					...industriesData,
 				},
 				include: {
 					skills: {
-						select: { id: true, name: true },
+						select: { name: true },
 					},
 				},
 			})
@@ -156,37 +198,28 @@ export class ProfileService {
 			exposeUnsetFields: false,
 		}) as Record<string, any>
 
-		// Обработка навыков
-		let skillsUpdate = {}
-		if (baseData.skills?.length > 0) {
-			const existingSkills = await this.prisma.skill.findMany({
-				where: {
-					id: {
-						in: baseData.skills,
-					},
-				},
-				select: { id: true },
-			})
+		const skillsUpdate = await this.getRelationData(
+			'skills',
+			baseData,
+			'skill',
+			'update',
+		)
+		const languagesUpdate = await this.getRelationData(
+			'languages',
+			baseData,
+			'language',
+			'update',
+		)
+		const industriesUpdate = await this.getRelationData(
+			'industries',
+			baseData,
+			'industry',
+			'update',
+		)
 
-			if (existingSkills.length !== baseData.skills.length) {
-				throw new BadRequestException('One or more skills do not exist')
-			}
-
-			skillsUpdate = {
-				skills: {
-					set: existingSkills,
-				},
-			}
-		} else if (baseData.skills?.length === 0) {
-			skillsUpdate = {
-				skills: {
-					set: [],
-				},
-			}
-		}
-
-		// Удаляем skills из baseData, чтобы избежать конфликта
 		delete baseData.skills
+		delete baseData.languages
+		delete baseData.industries
 
 		try {
 			const updatedProfile = await this.prisma.userProfile.update({
@@ -194,11 +227,13 @@ export class ProfileService {
 				data: {
 					...baseData,
 					...skillsUpdate,
+					...languagesUpdate,
+					...industriesUpdate,
 				},
 				include: {
-					skills: {
-						select: { id: true, name: true },
-					},
+					skills: { select: { name: true } },
+					languages: { select: { name: true } },
+					industries: { select: { name: true } },
 				},
 			})
 
@@ -235,14 +270,5 @@ export class ProfileService {
 			}
 			throw error
 		}
-	}
-
-	async setUserAvatar(id: string, avatarUrl: string | null) {
-		await this.prisma.userProfile.update({
-			where: { userId: id },
-			data: {
-				avatarUrl,
-			},
-		})
 	}
 }

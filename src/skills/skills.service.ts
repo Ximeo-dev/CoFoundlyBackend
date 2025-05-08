@@ -7,7 +7,10 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service'
 import { SkillDto } from './dto/skills.dto'
 import { RedisService } from 'src/redis/redis.service'
-import { Skill } from '@prisma/client'
+
+export interface Skill {
+	name: string
+}
 
 @Injectable()
 export class SkillsService {
@@ -31,7 +34,6 @@ export class SkillsService {
 			this.logger.debug('Cache miss, fetching skills from database')
 			skills = await this.prisma.skill.findMany({
 				select: {
-					id: true,
 					name: true,
 				},
 				orderBy: [{ profiles: { _count: 'desc' } }, { name: 'asc' }],
@@ -72,7 +74,6 @@ export class SkillsService {
 		try {
 			const skill = await this.prisma.skill.create({
 				data: {
-					id: dto.id,
 					name: dto.name,
 				},
 				select: {
@@ -112,10 +113,10 @@ export class SkillsService {
 		}
 	}
 
-	async deleteSkill(skillId: string) {
+	async deleteSkill(skillName: string) {
 		try {
 			const skill = await this.prisma.skill.delete({
-				where: { id: skillId },
+				where: { name: skillName },
 				select: {
 					id: true,
 					name: true,
@@ -127,7 +128,7 @@ export class SkillsService {
 					this.SKILLS_CACHE_KEY,
 				)
 				if (skills) {
-					const updatedSkills = skills.filter((s) => s.id !== skillId)
+					const updatedSkills = skills.filter((s) => s.name !== skillName)
 					await this.redis.setObject(
 						this.SKILLS_CACHE_KEY,
 						updatedSkills,
@@ -144,7 +145,7 @@ export class SkillsService {
 			return skill
 		} catch (error) {
 			if (error.code === 'P2025') {
-				throw new NotFoundException(`Skill with ID ${skillId} not found`)
+				throw new NotFoundException(`Skill ${skillName} not found`)
 			}
 			throw error
 		}
