@@ -14,7 +14,7 @@ function isEntitiesArray(data: unknown): data is Entity[] {
 }
 
 async function readEntities(): Promise<Entity[]> {
-	const fileName = 'jobs.json'
+	const fileName = 'languages.json'
 
 	try {
 		const filePath = join(process.cwd(), 'data', fileName)
@@ -37,7 +37,7 @@ async function readEntities(): Promise<Entity[]> {
 const prisma = new PrismaClient()
 
 async function main() {
-	const jobs = await readEntities()
+	const languages = await readEntities()
 
 	// await prisma.job.createMany({
 	// 	data: jobs.map((job) => ({ name: job.name }))
@@ -46,20 +46,20 @@ async function main() {
 	// await prisma.$disconnect()
 	// return
 
-	for (const { name } of jobs) {
+	for (const { name } of languages) {
 		try {
-			await prisma.job.create({
+			await prisma.language.create({
 				data: { name },
 			})
-			console.log(`✅ Added job: ${name}`)
+			console.log(`✅ Added language: ${name}`)
 		} catch (error) {
 			if (
 				error instanceof Error &&
 				error.message.includes('Unique constraint')
 			) {
-				console.log(`⚠️ Job already exists: ${name}`)
+				console.log(`⚠️ language already exists: ${name}`)
 			} else {
-				console.error(`❌ Failed to add job: ${name}`, error)
+				console.error(`❌ Failed to add language: ${name}`, error)
 			}
 		}
 	}
