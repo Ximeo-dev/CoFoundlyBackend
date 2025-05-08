@@ -5,6 +5,7 @@ import {
 	Get,
 	HttpCode,
 	Param,
+	ParseEnumPipe,
 	Post,
 	Query,
 	UseGuards,
@@ -14,47 +15,52 @@ import {
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { Roles } from 'src/auth/decorators/roles.decorator'
 import { RolesGuard } from 'src/auth/guards/roles.guard'
-import { EntitiesService } from './entities.service'
+import { EntitiesService, EntityType } from './entities.service'
 import { EntityDto } from './dto/entities.dto'
+import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
 
 @Controller()
 export class EntitiesController {
 	constructor(private readonly entitiesService: EntitiesService) {}
 
-	//Сейчас излишне, все 500 навыков спокойно можно получить разом
-	@Get('skills/autocomplete')
+	@Get(':entity/autocomplete')
 	@Auth()
-	async skills(@Query('q') query: string, @Query('limit') limit: number) {
+	async autocomplete(
+		@Query('q') query: string,
+		@Query('limit') limit: number,
+		@Param('entity', new EnumValidationPipe(EntityType))
+		entity: EntityType,
+	) {
 		return this.entitiesService.findEntitiesForAutocomplete(
 			query,
 			limit,
-			'skill',
+			entity,
 		)
 	}
 
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
-	@Post('skills')
+	@Post(':entity')
 	@UseGuards(RolesGuard)
 	@Roles('ADMIN')
 	@Auth()
-	async createSkill(@Body() dto: EntityDto) {
-		return this.entitiesService.createEntity(dto, 'skill')
+	async create(
+		@Body() dto: EntityDto,
+		@Param('entity', new ParseEnumPipe(EntityType)) entity: EntityType,
+	) {
+		return this.entitiesService.createEntity(dto, entity)
 	}
 
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
-	@Delete('skills/:skillName')
+	@Delete(':entity/:entityName')
 	@UseGuards(RolesGuard)
 	@Roles('ADMIN')
 	@Auth()
-	async deleteSkill(@Param('skillName') skillName: string) {
-		return this.entitiesService.deleteEntity(skillName, 'skill')
-	}
-
-	@Get('jobs/autocomplete')
-	@Auth()
-	async jobs(@Query('q') query: string, @Query('limit') limit: number) {
-		return this.entitiesService.findEntitiesForAutocomplete(query, limit, 'job')
+	async delete(
+		@Param('entityName') entityName: string,
+		@Param('entity', new ParseEnumPipe(EntityType)) entity: EntityType,
+	) {
+		return this.entitiesService.deleteEntity(entityName, entity)
 	}
 }
