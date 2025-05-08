@@ -47,6 +47,7 @@ export class ProfileService {
 	private async getRelationData(
 		data: any,
 		modelName: ManyToManyType,
+		fieldName: string,
 		operation: 'create' | 'update',
 	) {
 		if (data !== undefined) {
@@ -58,7 +59,7 @@ export class ProfileService {
 								in: data,
 							},
 						},
-						select: { id: true, name: true },
+						select: { id: true },
 					},
 				)
 
@@ -68,7 +69,7 @@ export class ProfileService {
 
 				const relationType = operation === 'create' ? 'connect' : 'set'
 				return {
-					[modelName]: {
+					[fieldName]: {
 						[relationType]: existingRecords.map((record) => ({
 							id: record.id,
 						})),
@@ -76,7 +77,7 @@ export class ProfileService {
 				}
 			} else if (operation === 'update' && data.length === 0) {
 				return {
-					[modelName]: {
+					[fieldName]: {
 						set: [],
 					},
 				}
@@ -106,7 +107,7 @@ export class ProfileService {
 					where: {
 						name: data,
 					},
-					select: { name: true },
+					select: { id: true },
 				})
 
 				if (!existingRecord) {
@@ -115,7 +116,7 @@ export class ProfileService {
 
 				return {
 					[modelName]: {
-						connect: { name: existingRecord.name },
+						connect: { id: existingRecord.id },
 					},
 				}
 			}
@@ -189,15 +190,22 @@ export class ProfileService {
 			'job',
 			'create',
 		)
-		const skillsData = await this.getRelationData(dto.skills, 'skill', 'create')
+		const skillsData = await this.getRelationData(
+			dto.skills,
+			'skill',
+			'skills',
+			'create',
+		)
 		const languagesData = await this.getRelationData(
 			dto.languages,
 			'language',
+			'languages',
 			'create',
 		)
 		const industriesData = await this.getRelationData(
 			dto.industries,
 			'industry',
+			'industries',
 			'create',
 		)
 
@@ -261,16 +269,19 @@ export class ProfileService {
 		const skillsUpdate = await this.getRelationData(
 			baseData['skills'],
 			'skill',
+			'skills',
 			'update',
 		)
 		const languagesUpdate = await this.getRelationData(
 			baseData['languages'],
 			'language',
+			'languages',
 			'update',
 		)
 		const industriesUpdate = await this.getRelationData(
 			baseData['industries'],
 			'industry',
+			'industries',
 			'update',
 		)
 
@@ -284,7 +295,7 @@ export class ProfileService {
 				where: { userId },
 				data: {
 					...baseData,
-					
+
 					...jobUpdate,
 					...skillsUpdate,
 					...languagesUpdate,

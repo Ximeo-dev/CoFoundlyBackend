@@ -107,6 +107,12 @@ export class UpdateProfileDto {
 	@ArrayMaxSize(5)
 	@IsString({ each: true })
 	languages?: string[]
+
+	@IsOptional()
+	@IsArray()
+	@ArrayMaxSize(5)
+	@IsString({ each: true })
+	industries?: string[]
 }
 
 export class UserProfileResponseDto {
@@ -135,13 +141,16 @@ export class UserProfileResponseDto {
 	job: string
 
 	@Expose()
-	portfolio: string[]
-
-	@Expose()
 	languages: string[]
 
 	@Expose()
 	skills: string[]
+
+	@Expose()
+	industries: string[]
+
+	@Expose()
+	portfolio: string[]
 
 	@Expose()
 	likes: number
