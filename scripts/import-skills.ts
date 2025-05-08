@@ -53,10 +53,17 @@ const prisma = new PrismaClient()
 async function main() {
 	const skills = await readSkills()
 
+	// await prisma.skill.createMany({
+	// 	data: skills.map((skill) => ({ name: skill.name }))
+	// })
+
+	// await prisma.$disconnect()
+	// return
+
 	for (const { name, id } of skills) {
 		try {
 			await prisma.skill.create({
-				data: { id, name },
+				data: { name },
 			})
 			console.log(`✅ Added skill: ${name}`)
 		} catch (error) {

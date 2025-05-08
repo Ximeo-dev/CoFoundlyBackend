@@ -39,16 +39,17 @@ model UserProfile {
   user  User    @relation(fields: [userId], references: [id])
   name String
   birthDate DateTime @db.Date
-  avatarUrl String?
   country String?
   city String?
   timezone String?
   bio String
   job String
   portfolio String[]
-  languages String[]
-  // niches String[]
   skills Skill[]
+  languages Language[]
+  industries Industry[]
+  projectRoleId Int?
+  projectRole ProjectRole? @relation(fields: [projectRoleId], references: [id])
 
   likes Int @default(0)
   createdAt        DateTime          @default(now())
@@ -57,12 +58,48 @@ model UserProfile {
   @@index([userId])
 }
 
+model Project {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String
+  ownerId     String        @db.Uuid
+  status      ProjectStatus
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Idea        Idea[]
+  Match       Match[]
+  owner       User          @relation("UserProjects", fields: [ownerId], references: [id])
+  teamMembers User[]        @relation("ProjectMembers")
+}
+
 model Skill {
-  id    String @id
+  id    Int @id @default(autoincrement())
   name  String @unique @db.VarChar(255)
   profiles UserProfile[]
 
   @@index([name])
+}
+
+model Language {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(255)
+  profiles UserProfile[]
+
+  @@index([name])
+}
+
+model Industry {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(255)
+  profiles UserProfile[]
+
+  @@index([name])
+}
+
+model ProjectRole {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(255)
+  profiles UserProfile[]
 }
 
 model Interest {
@@ -84,20 +121,6 @@ model SecuritySettings {
   resetPasswordToken String?
   jwtTokenVersion Int @default(0)
   user             User    @relation(fields: [userId], references: [id])
-}
-
-model Project {
-  id          Int           @id @default(autoincrement())
-  name        String
-  description String
-  ownerId     String        @db.Uuid
-  status      ProjectStatus
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  Idea        Idea[]
-  Match       Match[]
-  owner       User          @relation("UserProjects", fields: [ownerId], references: [id])
-  teamMembers User[]        @relation("ProjectMembers")
 }
 
 model Match {

@@ -43,8 +43,7 @@ export class CreateProfileDto {
 	job: string
 
 	@IsArray()
-	@ArrayNotEmpty()
-	@Transform(({ value }) => value.map((v: string) => v.toLowerCase()))
+	@ArrayMaxSize(20)
 	@IsString({ each: true })
 	skills: string[]
 
@@ -65,16 +64,17 @@ export class UpdateProfileDto {
 	@IsNotEmpty()
 	name?: string
 
-	@IsOptional()
-	@IsDate()
-	@MaxDate(subYears(new Date(), 14), { message: 'Вам должно быть не менее 14 лет' })
-	@Type(() => Date)
-	birthDate?: string
+	// @IsOptional()
+	// @IsDate()
+	// @MaxDate(subYears(new Date(), 14), { message: 'Вам должно быть не менее 14 лет' })
+	// @Type(() => Date)
+	// birthDate?: string
 
 	@IsOptional()
 	@IsString()
 	@Expose()
-	@IsNotEmpty()
+	@MinLength(10)
+	@MaxLength(256)
 	bio?: string
 
 	@IsOptional()
@@ -85,12 +85,7 @@ export class UpdateProfileDto {
 
 	@IsOptional()
 	@IsArray()
-	@ArrayNotEmpty()
-	@ArrayMinSize(1)
 	@ArrayMaxSize(20)
-	@Transform(({ value }) =>
-		Array.isArray(value) ? value.map((v: string) => v.toLowerCase()) : value,
-	)
 	@IsString({ each: true })
 	@Expose()
 	skills?: string[]

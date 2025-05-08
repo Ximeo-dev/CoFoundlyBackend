@@ -40,11 +40,11 @@ export class SkillsController {
 
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
-	@Delete(':skillId')
+	@Delete(':skillName')
 	@UseGuards(RolesGuard)
 	@Roles('ADMIN')
 	@Auth()
-	async deleteSkill(@Param('skillId') skillId: string) {
-		return this.skillsService.deleteSkill(skillId)
+	async deleteSkill(@Param('skillName') skillName: string) {
+		return this.skillsService.deleteSkill(skillName)
 	}
 }
