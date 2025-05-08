@@ -13,6 +13,9 @@ import {
 	UserProfileResponseDto,
 } from './dto/profile.dto'
 
+type OneToManyType = 'job' | 'projectRole'
+type ManyToManyType = 'skill' | 'language' | 'industry'
+
 @Injectable()
 export class ProfileService {
 	constructor(
@@ -34,43 +37,94 @@ export class ProfileService {
 		return age
 	}
 
+	/**
+	 * Обработка связанных сущностей (many-to-many: ManyToManyType)
+	 * @param data - Данные для обновления
+	 * @param modelName - Имя модели Prisma (ManyToManyType)
+	 * @param operation - Операция (create или update)
+	 * @returns Данные для Prisma (connect или set)
+	 */
 	private async getRelationData(
-		fieldName: string,
-		dto: any,
-		modelName: string,
+		data: any,
+		modelName: ManyToManyType,
 		operation: 'create' | 'update',
 	) {
-		if (dto[fieldName] !== undefined) {
-			if (Array.isArray(dto[fieldName]) && dto[fieldName].length > 0) {
-				const existingRecords = await this.prisma[modelName].findMany({
-					where: {
-						name: {
-							in: dto[fieldName],
+		if (data !== undefined) {
+			if (data.length > 0) {
+				const existingRecords = await this.prisma[modelName as string].findMany(
+					{
+						where: {
+							name: {
+								in: data,
+							},
 						},
+						select: { id: true, name: true },
 					},
-					select: { id: true, name: true },
-				})
+				)
 
-				if (existingRecords.length !== dto[fieldName].length) {
-					throw new BadRequestException(`One or more ${fieldName} do not exist`)
+				if (existingRecords.length !== data.length) {
+					throw new BadRequestException(`One or more ${modelName} do not exist`)
 				}
 
 				const relationType = operation === 'create' ? 'connect' : 'set'
 				return {
-					[fieldName]: {
+					[modelName]: {
 						[relationType]: existingRecords.map((record) => ({
 							id: record.id,
 						})),
 					},
 				}
-			} else if (
-				operation === 'update' &&
-				Array.isArray(dto[fieldName]) &&
-				dto[fieldName].length === 0
-			) {
+			} else if (operation === 'update' && data.length === 0) {
 				return {
-					[fieldName]: {
+					[modelName]: {
 						set: [],
+					},
+				}
+			}
+		}
+		return {}
+	}
+
+	/**
+	 * Обработка связанных сущностей (one-to-many: OneToManyType)
+	 * @param data - Данные для обновления
+	 * @param modelName - Имя модели Prisma (OneToManyType)
+	 * @param operation - Операция (create или update)
+	 * @returns Данные для Prisma (connect или disconnect)
+	 */
+	private async getOneToManyRelationData(
+		data: any,
+		modelName: OneToManyType,
+		operation: 'create' | 'update',
+	) {
+		if (data !== undefined) {
+			// Если предоставлено значение (не null и не пустая строка)
+			if (data && typeof data === 'string' && data.trim() !== '') {
+				const existingRecord = await this.prisma[
+					modelName as string
+				].findUnique({
+					where: {
+						name: data,
+					},
+					select: { name: true },
+				})
+
+				if (!existingRecord) {
+					throw new BadRequestException(`${modelName} ${data} does not exist`)
+				}
+
+				return {
+					[modelName]: {
+						connect: { name: existingRecord.name },
+					},
+				}
+			}
+			// Для update: если null или пустая строка, отключаем связь
+			else if (operation === 'update') {
+				console.log('disconnect')
+				return {
+					[modelName]: {
+						disconnect: true,
 					},
 				}
 			}
@@ -84,8 +138,11 @@ export class ProfileService {
 				where: { userId },
 				include: {
 					skills: {
-						select: { name: true }
-					}
+						select: { name: true },
+					},
+					job: {
+						select: { name: true },
+					},
 				},
 			})
 
@@ -127,21 +184,19 @@ export class ProfileService {
 			throw new BadRequestException('Profile already exists')
 		}
 
-		const skillsData = await this.getRelationData(
-			'skills',
-			dto,
-			'skill',
+		const jobData = await this.getOneToManyRelationData(
+			dto.job,
+			'job',
 			'create',
 		)
+		const skillsData = await this.getRelationData(dto.skills, 'skill', 'create')
 		const languagesData = await this.getRelationData(
-			'languages',
-			dto,
+			dto.languages,
 			'language',
 			'create',
 		)
 		const industriesData = await this.getRelationData(
-			'industries',
-			dto,
+			dto.industries,
 			'industry',
 			'create',
 		)
@@ -153,8 +208,8 @@ export class ProfileService {
 					name: dto.name,
 					birthDate: new Date(dto.birthDate),
 					bio: dto.bio,
-					job: dto.job,
 					portfolio: dto.portfolio,
+					...jobData,
 					...skillsData,
 					...languagesData,
 					...industriesData,
@@ -198,25 +253,28 @@ export class ProfileService {
 			exposeUnsetFields: false,
 		}) as Record<string, any>
 
+		const jobUpdate = await this.getOneToManyRelationData(
+			baseData['job'],
+			'job',
+			'update',
+		)
 		const skillsUpdate = await this.getRelationData(
-			'skills',
-			baseData,
+			baseData['skills'],
 			'skill',
 			'update',
 		)
 		const languagesUpdate = await this.getRelationData(
-			'languages',
-			baseData,
+			baseData['languages'],
 			'language',
 			'update',
 		)
 		const industriesUpdate = await this.getRelationData(
-			'industries',
-			baseData,
+			baseData['industries'],
 			'industry',
 			'update',
 		)
 
+		delete baseData.job
 		delete baseData.skills
 		delete baseData.languages
 		delete baseData.industries
@@ -226,11 +284,14 @@ export class ProfileService {
 				where: { userId },
 				data: {
 					...baseData,
+					
+					...jobUpdate,
 					...skillsUpdate,
 					...languagesUpdate,
 					...industriesUpdate,
 				},
 				include: {
+					job: { select: { name: true } },
 					skills: { select: { name: true } },
 					languages: { select: { name: true } },
 					industries: { select: { name: true } },

@@ -56,6 +56,11 @@ export class CreateProfileDto {
 	@ArrayMaxSize(5)
 	@IsString({ each: true })
 	languages: string[]
+
+	@IsArray()
+	@ArrayMaxSize(5)
+	@IsString({ each: true })
+	industries: string[]
 }
 
 export class UpdateProfileDto {
@@ -80,7 +85,7 @@ export class UpdateProfileDto {
 	@IsOptional()
 	@IsString()
 	@Expose()
-	@IsNotEmpty()
+	// @IsNotEmpty()
 	job?: string
 
 	@IsOptional()

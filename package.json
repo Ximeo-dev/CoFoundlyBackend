@@ -13,6 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "cross-env NODE_ENV=production node dist/main",
     "import:skills": "ts-node scripts/import-skills.ts",
+    "import:jobs": "ts-node scripts/import-jobs.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

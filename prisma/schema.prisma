@@ -43,13 +43,14 @@ model UserProfile {
   city String?
   timezone String?
   bio String
-  job String
   portfolio String[]
+  jobId Int?
+  job Job? @relation(fields: [jobId], references: [id])
+  projectRoleId Int?
+  projectRole ProjectRole? @relation(fields: [projectRoleId], references: [id])
   skills Skill[]
   languages Language[]
   industries Industry[]
-  projectRoleId Int?
-  projectRole ProjectRole? @relation(fields: [projectRoleId], references: [id])
 
   likes Int @default(0)
   createdAt        DateTime          @default(now())
@@ -70,6 +71,14 @@ model Project {
   Match       Match[]
   owner       User          @relation("UserProjects", fields: [ownerId], references: [id])
   teamMembers User[]        @relation("ProjectMembers")
+}
+
+model Job {
+  id    Int @id @default(autoincrement())
+  name String @unique @db.VarChar(255)
+  profiles UserProfile[]
+
+  @@index([name])
 }
 
 model Skill {

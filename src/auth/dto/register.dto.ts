@@ -12,10 +12,6 @@ export class RegisterDto {
 	@IsNotEmpty()
 	email: string
 
-	@IsString()
-	@IsNotEmpty()
-	name: string
-
 	@MinLength(8, {
 		message: 'Пароль должен состоять минимум из 8 символов',
 	})

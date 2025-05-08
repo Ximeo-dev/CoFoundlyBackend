@@ -12,7 +12,7 @@ import { RedisModule } from './redis/redis.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { S3Module } from './s3/s3.module'
 import { TwoFactorModule } from './two-factor/two-factor.module'
-import { SkillsModule } from './skills/skills.module'
+import { EntitiesModule } from './entities/entities.module'
 
 @Module({
 	imports: [
@@ -30,7 +30,7 @@ import { SkillsModule } from './skills/skills.module'
 		PrismaModule,
 		S3Module,
 		TwoFactorModule,
-		SkillsModule,
+		EntitiesModule,
 	],
 	controllers: [AppController],
 })
