@@ -12,7 +12,12 @@ export interface Entity {
 	name: string
 }
 
-export type EntityType = 'job' | 'skill' | 'language' | 'industry'
+export enum EntityType {
+	JOB = 'job',
+	SKILL = 'skill',
+	LANGUAGE = 'language',
+	INDUSTRY = 'industry',
+}
 
 @Injectable()
 export class EntitiesService {
