@@ -21,6 +21,7 @@ import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
+import { parseBool } from 'src/utils/parse-bool'
 import { safeCompare } from 'src/utils/safe-compare'
 import * as zxcvbn from 'zxcvbn'
 
@@ -44,8 +45,8 @@ export class EmailService {
 		this.emailUser = configService.getOrThrow<string>('EMAIL_USER')
 		this.transporter = nodemailer.createTransport({
 			host: configService.getOrThrow<string>('EMAIL_HOST'),
-			port: configService.getOrThrow<number>('EMAIL_PORT'),
-			secure: configService.getOrThrow<boolean>('EMAIL_SECURE'),
+			port: parseInt(configService.getOrThrow('EMAIL_PORT')),
+			secure: parseBool(configService.getOrThrow('EMAIL_SECURE')),
 			auth: {
 				user: this.emailUser,
 				pass: configService.getOrThrow<string>('EMAIL_PASS'),
