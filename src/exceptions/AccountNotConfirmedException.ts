@@ -7,7 +7,7 @@ export class AccountNotConfirmedException extends HttpException {
 				message:
 					'Аккаунт не является подтверждённым. Подтвердите адрес электронной почты',
 			},
-			HttpStatus.BAD_REQUEST
+			HttpStatus.BAD_REQUEST,
 		)
 	}
 }
