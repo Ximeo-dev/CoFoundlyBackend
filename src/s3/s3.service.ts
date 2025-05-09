@@ -4,8 +4,9 @@ import {
 	PutObjectCommand,
 	S3Client,
 } from '@aws-sdk/client-s3'
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { S3FileNotFoundException } from 'src/exceptions/S3FileNotFoundException'
 
 @Injectable()
 export class S3Service {
@@ -70,7 +71,7 @@ export class S3Service {
 				error.name === 'NoSuchKey' ||
 				error.$metadata?.httpStatusCode === 404
 			) {
-				throw new NotFoundException('File not found')
+				throw new S3FileNotFoundException('File not found')
 			}
 
 			throw error

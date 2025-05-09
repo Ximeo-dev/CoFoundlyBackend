@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import * as sharp from 'sharp'
+import { S3FileNotFoundException } from 'src/exceptions/S3FileNotFoundException'
 import { ProfileService } from 'src/profile/profile.service'
 import { S3Service } from 'src/s3/s3.service'
 
@@ -55,7 +56,7 @@ export class ImagesService {
 	async getAvatar(userId: string, size: number) {
 		const profile = await this.profileService.getUserProfile(userId)
 
-		if (!profile) throw new NotFoundException('User profile not found')
+		if (!profile) throw new S3FileNotFoundException('User profile not found')
 
 		let key = `avatars/${userId}-${size}.webp`
 
