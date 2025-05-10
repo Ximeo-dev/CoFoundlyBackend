@@ -132,7 +132,7 @@ export class UserProfileResponseDto {
 	age: number
 
 	@Expose()
-	avatarUrl: string
+	hasAvatar: boolean
 
 	@Expose()
 	bio: string

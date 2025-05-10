@@ -37,6 +37,8 @@ export class ImagesService {
 		})
 
 		await Promise.all(uploadTasks)
+
+		await this.profileService.setHasAvatar(userId, true)
 	}
 
 	async deleteAvatar(userId: string) {
@@ -51,6 +53,8 @@ export class ImagesService {
 				this.S3Service.delete(`${baseKey}-${size}.webp`).catch(() => null),
 			),
 		)
+
+		await this.profileService.setHasAvatar(userId, false)
 	}
 
 	async getAvatar(userId: string, size: number) {
