@@ -11,25 +11,25 @@ import {
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
-import { ProfileService } from './profile.service'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
-import { CreateProfileDto, UpdateProfileDto } from './dto/profile.dto'
+import { CreateProfileDto, UpdateProfileDto } from './dto/user-profile.dto'
+import { UserProfileService } from './user-profile.service'
 
-@Controller('profile')
-export class ProfileController {
-	constructor(private readonly profileService: ProfileService) {}
+@Controller('profile/user')
+export class UserProfileController {
+	constructor(private readonly userProfileService: UserProfileService) {}
 
 	@Get()
 	@Auth()
 	async getProfile(@CurrentUser('id') id: string) {
-		return this.profileService.getUserProfile(id)
+		return this.userProfileService.getUserProfile(id)
 	}
 
 	@Get(':id')
 	@Auth()
 	async getForeignProfile(@Param('id', ParseUUIDPipe) id: string) {
-		return this.profileService.getForeignUserProfile(id)
+		return this.userProfileService.getForeignUserProfile(id)
 	}
 
 	@HttpCode(200)
@@ -40,7 +40,7 @@ export class ProfileController {
 		@CurrentUser('id') id: string,
 		@Body() dto: CreateProfileDto,
 	) {
-		return this.profileService.createUserProfile(id, dto)
+		return this.userProfileService.createUserProfile(id, dto)
 	}
 
 	@HttpCode(200)
@@ -51,13 +51,13 @@ export class ProfileController {
 		@CurrentUser('id') id: string,
 		@Body() dto: UpdateProfileDto,
 	) {
-		return this.profileService.updateUserProfile(id, dto)
+		return this.userProfileService.updateUserProfile(id, dto)
 	}
 
 	@HttpCode(200)
 	@Delete()
 	@Auth()
 	async deleteProfile(@CurrentUser('id') id: string) {
-		return this.profileService.deleteUserProfile(id)
+		return this.userProfileService.deleteUserProfile(id)
 	}
 }

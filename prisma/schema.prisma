@@ -67,7 +67,6 @@ model Project {
   name        String
   description String
   ownerId     String        @db.Uuid
-  status      ProjectStatus
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   Idea        Idea[]
@@ -259,12 +258,6 @@ enum InterestType {
   FIND_PROJECT
   FIND_PEOPLE
   HAVE_PROJECT
-}
-
-enum ProjectStatus {
-  ACTIVE
-  INACTIVE
-  COMPLETED
 }
 
 enum MatchStatus {

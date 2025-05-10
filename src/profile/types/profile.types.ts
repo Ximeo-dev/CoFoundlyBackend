@@ -4,4 +4,4 @@ export type UserProfileExtended = {
 	skills: Skill[]
 	languages: Language[]
 	industries: Industry[]
-} & UserProfile
+} & { id: number; userId: string }

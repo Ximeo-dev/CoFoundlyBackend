@@ -5,27 +5,27 @@ import {
 } from '@nestjs/common'
 import { instanceToPlain, plainToClass } from 'class-transformer'
 import { PrismaService } from 'src/prisma/prisma.service'
+import { calculateAge } from 'src/utils/calculate-age'
 import {
 	CreateProfileDto,
 	UpdateProfileDto,
 	UserProfileResponseDto,
-} from './dto/profile.dto'
-import { calculateAge } from 'src/utils/calculate-age'
+} from './dto/user-profile.dto'
 import { RelationService } from './relation.service'
+import { UserProfileExtended } from './types/profile.types'
 
 @Injectable()
-export class ProfileService {
+export class UserProfileService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly relationService: RelationService,
 	) {}
 
-	async getUserProfile(userId: string, excludeBirthDate: boolean = false) {
+	async getUserProfile(userId: string) {
 		try {
 			const profile = await this.prisma.userProfile.findUnique({
 				where: { userId },
 				include: {
-					job: { select: { name: true } },
 					skills: { select: { name: true } },
 					languages: { select: { name: true } },
 					industries: { select: { name: true } },
@@ -38,15 +38,7 @@ export class ProfileService {
 				)
 			}
 
-			const age = profile.birthDate ? calculateAge(profile.birthDate) : null
-
-			const responseData = excludeBirthDate
-				? { ...profile, birthDate: undefined, age }
-				: { ...profile, age }
-
-			return plainToClass(UserProfileResponseDto, responseData, {
-				excludeExtraneousValues: true,
-			})
+			return this.prepareToResponse(profile, false)
 		} catch (error) {
 			if (error instanceof NotFoundException) {
 				throw error
@@ -56,7 +48,20 @@ export class ProfileService {
 	}
 
 	async getForeignUserProfile(userId: string) {
-		return this.getUserProfile(userId, true)
+		const profile = await this.getUserProfile(userId)
+		return this.prepareToResponse(profile, true)
+	}
+
+	public prepareToResponse(profile: any, excludeBirthDate: boolean = true) {
+		const age = profile.birthDate ? calculateAge(profile.birthDate) : null
+
+		const responseData = excludeBirthDate
+			? { ...profile, birthDate: undefined, age }
+			: { ...profile, age }
+
+		return plainToClass(UserProfileResponseDto, responseData, {
+			excludeExtraneousValues: true,
+		})
 	}
 
 	async createUserProfile(userId: string, dto: CreateProfileDto) {

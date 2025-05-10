@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import * as sharp from 'sharp'
 import { S3FileNotFoundException } from 'src/exceptions/S3FileNotFoundException'
-import { ProfileService } from 'src/profile/profile.service'
+import { UserProfileService } from 'src/profile/user-profile.service'
 import { S3Service } from 'src/s3/s3.service'
 
 export const AVATAR_SIZES = [512, 128, 64]
@@ -10,11 +10,11 @@ export const AVATAR_SIZES = [512, 128, 64]
 export class ImagesService {
 	constructor(
 		private readonly S3Service: S3Service,
-		private readonly profileService: ProfileService,
+		private readonly userProfileService: UserProfileService,
 	) {}
 
 	async processAndStoreAvatar(userId: string, buffer: Buffer) {
-		const profile = await this.profileService.getUserProfile(userId)
+		const profile = await this.userProfileService.getUserProfile(userId)
 
 		if (!profile) throw new NotFoundException('User profile not found')
 
@@ -38,11 +38,11 @@ export class ImagesService {
 
 		await Promise.all(uploadTasks)
 
-		await this.profileService.setHasAvatar(userId, true)
+		await this.userProfileService.setHasAvatar(userId, true)
 	}
 
 	async deleteAvatar(userId: string) {
-		const profile = await this.profileService.getUserProfile(userId)
+		const profile = await this.userProfileService.getUserProfile(userId)
 
 		if (!profile) throw new NotFoundException('User profile not found')
 
@@ -54,11 +54,11 @@ export class ImagesService {
 			),
 		)
 
-		await this.profileService.setHasAvatar(userId, false)
+		await this.userProfileService.setHasAvatar(userId, false)
 	}
 
 	async getAvatar(userId: string, size: number) {
-		const profile = await this.profileService.getUserProfile(userId)
+		const profile = await this.userProfileService.getUserProfile(userId)
 
 		if (!profile) throw new S3FileNotFoundException('User profile not found')
 

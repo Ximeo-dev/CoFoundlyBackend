@@ -2,12 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { ComputingService } from './computing.service'
 import { SwipeAction, SwipeIntent } from './types/swipe.types'
+import { calculateAge } from 'src/utils/calculate-age'
+import { UserProfileService } from 'src/profile/user-profile.service'
 
 @Injectable()
 export class SwipeService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly computingService: ComputingService,
+		private readonly userProfileService: UserProfileService,
 	) {}
 
 	async findCandidate(currentUserId: string, intent: SwipeIntent) {
@@ -35,7 +38,9 @@ export class SwipeService {
 					},
 				},
 			},
-			include: {
+			select: {
+				id: true,
+				userId: true,
 				skills: true,
 				industries: true,
 				languages: true,
@@ -54,7 +59,9 @@ export class SwipeService {
 		})
 
 		scored.sort((a, b) => b.score - a.score)
-		return scored[0]?.candidate ?? null
+
+		const firstScored = scored[0]?.candidate
+		return this.userProfileService.getForeignUserProfile(firstScored.userId)
 	}
 
 	async handleSwipe(fromUserId: string, toUserId: string, action: SwipeAction) {
