@@ -136,17 +136,17 @@ model SecuritySettings {
 
 model Swipe {
   id         BigInt      @id @default(autoincrement())
-  fromUserId Int
-  toUserId   Int
+  fromProfileId Int
+  toProfileId   Int
   isLiked      Boolean
   createdAt  DateTime @default(now())
 
-  fromUser   UserProfile     @relation("SwipesFrom", fields: [fromUserId], references: [id])
-  toUser     UserProfile     @relation("SwipesTo", fields: [toUserId], references: [id])
+  fromProfile   UserProfile     @relation("SwipesFrom", fields: [fromProfileId], references: [id])
+  toProfile     UserProfile     @relation("SwipesTo", fields: [toProfileId], references: [id])
 
-  @@unique([fromUserId, toUserId])
-  @@index([toUserId])
-} 
+  @@unique([fromProfileId, toProfileId])
+  @@index([toProfileId])
+}
 
 model Match {
   id         Int      @id @default(autoincrement())
