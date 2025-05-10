@@ -45,12 +45,11 @@ model UserProfile {
   portfolio String[]
   jobId Int?
   job Job? @relation(fields: [jobId], references: [id])
-  projectRoleId Int?
-  projectRole ProjectRole? @relation(fields: [projectRoleId], references: [id])
   skills Skill[]
   languages Language[]
   industries Industry[]
   likes Int @default(0)
+  hasAvatar Boolean @default(false)
 
   performedSwipes Swipe[] @relation("SwipesFrom")
   receivedSwipes Swipe[] @relation("SwipesTo")
@@ -108,11 +107,11 @@ model Industry {
   @@index([name])
 }
 
-model ProjectRole {
-  id Int @id @default(autoincrement())
-  name String @unique @db.VarChar(255)
-  profiles UserProfile[]
-}
+// model ProjectRole {
+//   id Int @id @default(autoincrement())
+//   name String @unique @db.VarChar(255)
+//   profiles UserProfile[]
+// }
 
 model Interest {
   id   Int          @id @default(autoincrement())

@@ -227,4 +227,23 @@ export class ProfileService {
 			throw error
 		}
 	}
+
+	async setHasAvatar(userId: string, status: boolean) {
+		try {
+			await this.prisma.userProfile.update({
+				where: { userId },
+				data: {
+					hasAvatar: status,
+				},
+			})
+			return { userId, deleted: true }
+		} catch (error) {
+			if (error.code === 'P2025') {
+				throw new NotFoundException(
+					`Profile with userId ${userId} does not exist`,
+				)
+			}
+			throw error
+		}
+	}
 }
