@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common'
 import { SwipeService } from './swipe.service'
 import { SwipeController } from './swipe.controller'
-import { UserModule } from 'src/user/user.module'
+import { ComputingService } from './computing.service'
 
 @Module({
-  imports: [],
+	imports: [],
 	controllers: [SwipeController],
-	providers: [SwipeService],
+	providers: [SwipeService, ComputingService],
 })
 export class SwipeModule {}
