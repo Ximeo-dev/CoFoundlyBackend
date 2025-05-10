@@ -15,7 +15,6 @@ model User {
   updatedAt        DateTime          @updatedAt
   BlogPost         BlogPost[]
   Idea             Idea[]
-  matches          Match[]           @relation("UserMatches")
   Message          Message[]
   OAuthAccount     OAuthAccount[]
   projectsOwned    Project[]         @relation("UserProjects")
@@ -50,8 +49,13 @@ model UserProfile {
   industries Industry[]
   projectRoleId Int?
   projectRole ProjectRole? @relation(fields: [projectRoleId], references: [id])
-
   likes Int @default(0)
+
+  performedSwipes Swipe[] @relation("SwipesFrom")
+  receivedSwipes Swipe[] @relation("SwipesTo")
+  MatchesAsA Match[] @relation("MatchesA")
+  MatchesAsB Match[] @relation("MatchesB")
+
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -67,7 +71,6 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   Idea        Idea[]
-  Match       Match[]
   owner       User          @relation("UserProjects", fields: [ownerId], references: [id])
   teamMembers User[]        @relation("ProjectMembers")
 }
@@ -123,17 +126,30 @@ model SecuritySettings {
   user             User    @relation(fields: [userId], references: [id])
 }
 
-model Match {
-  id          Int         @id @default(autoincrement())
-  userId      String      @db.Uuid
-  projectId   Int
-  matchStatus MatchStatus
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  project     Project     @relation(fields: [projectId], references: [id])
-  user        User        @relation("UserMatches", fields: [userId], references: [id])
+model Swipe {
+  id         BigInt      @id @default(autoincrement())
+  fromUserId Int
+  toUserId   Int
+  isLiked      Boolean
+  createdAt  DateTime @default(now())
 
-  @@index([userId, projectId])
+  fromUser   UserProfile     @relation("SwipesFrom", fields: [fromUserId], references: [id])
+  toUser     UserProfile     @relation("SwipesTo", fields: [toUserId], references: [id])
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId])
+} 
+
+model Match {
+  id         Int      @id @default(autoincrement())
+  profileAId    Int
+  profileBId    Int
+  createdAt  DateTime @default(now())
+
+  profileA      UserProfile     @relation("MatchesA", fields: [profileAId], references: [id])
+  profileB      UserProfile     @relation("MatchesB", fields: [profileBId], references: [id])
+
+  @@unique([profileAId, profileBId])
 }
 
 model Idea {
