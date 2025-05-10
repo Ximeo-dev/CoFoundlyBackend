@@ -5,7 +5,6 @@ import {
 	Get,
 	HttpCode,
 	Param,
-	ParseEnumPipe,
 	Post,
 	Query,
 	UseGuards,
@@ -19,7 +18,7 @@ import { EntitiesService, EntityType } from './entities.service'
 import { EntityDto } from './dto/entities.dto'
 import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
 
-@Controller()
+@Controller('entity')
 export class EntitiesController {
 	constructor(private readonly entitiesService: EntitiesService) {}
 
@@ -46,7 +45,7 @@ export class EntitiesController {
 	@Auth()
 	async create(
 		@Body() dto: EntityDto,
-		@Param('entity', new ParseEnumPipe(EntityType)) entity: EntityType,
+		@Param('entity', new EnumValidationPipe(EntityType)) entity: EntityType,
 	) {
 		return this.entitiesService.createEntity(dto, entity)
 	}
@@ -59,7 +58,7 @@ export class EntitiesController {
 	@Auth()
 	async delete(
 		@Param('entityName') entityName: string,
-		@Param('entity', new ParseEnumPipe(EntityType)) entity: EntityType,
+		@Param('entity', new EnumValidationPipe(EntityType)) entity: EntityType,
 	) {
 		return this.entitiesService.deleteEntity(entityName, entity)
 	}
