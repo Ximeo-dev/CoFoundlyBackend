@@ -10,7 +10,7 @@ export class ImageValidationPipe implements PipeTransform {
 
 		const MAX_SIZE = 3 * 1024 * 1024 // 3MB
 		if (file.size > MAX_SIZE) {
-			throw new BadRequestException('Максимальный допустимый размер файла 3MB')
+			throw new BadRequestException('Максимальный допустимый размер файла 3МБ')
 		}
 
 		const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp']
