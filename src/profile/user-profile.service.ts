@@ -12,7 +12,6 @@ import {
 	UserProfileResponseDto,
 } from './dto/user-profile.dto'
 import { RelationService } from './relation.service'
-import { UserProfileExtended } from './types/profile.types'
 
 @Injectable()
 export class UserProfileService {
