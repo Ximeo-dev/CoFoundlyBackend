@@ -26,6 +26,7 @@ export class UserProfileService {
 			const profile = await this.prisma.userProfile.findUnique({
 				where: { userId },
 				include: {
+					job: { select: { name: true } },
 					skills: { select: { name: true } },
 					languages: { select: { name: true } },
 					industries: { select: { name: true } },
@@ -37,6 +38,8 @@ export class UserProfileService {
 					`Profile with userId ${userId} does not exist`,
 				)
 			}
+
+			console.log(profile)
 
 			return this.prepareToResponse(profile, false)
 		} catch (error) {
