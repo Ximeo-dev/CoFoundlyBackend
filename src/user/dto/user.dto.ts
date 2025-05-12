@@ -47,13 +47,10 @@ export class UserResponseDto {
 	email: string
 
 	@Expose()
-	name: string
+	username: string
 
 	@Expose()
-	age: number
-
-	@Expose()
-	avatarUrl: string | null
+	displayUsername: string
 
 	@Expose()
 	createdAt: string

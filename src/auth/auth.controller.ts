@@ -15,7 +15,7 @@ import { EmailService } from 'src/email/email.service'
 import { UserService } from 'src/user/user.service'
 import { AuthService } from './auth.service'
 import { LoginDto } from './dto/login.dto'
-import { EmailAvailableDto, RegisterDto } from './dto/register.dto'
+import { EmailAvailableDto, RegisterDto, UsernameAvailableDto } from './dto/register.dto'
 import {
 	ResetPasswordConfirmDto,
 	ResetPasswordRequestDto,
@@ -103,6 +103,16 @@ export class AuthController {
 	@Get('register/email-available')
 	async checkEmailAvailable(@Query() dto: EmailAvailableDto) {
 		const user = await this.userService.getByEmail(dto.email)
+
+		if (!user) return true
+		return false
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Get('register/username-available')
+	async checkUsernameAvailable(@Query() dto: UsernameAvailableDto) {
+		const user = await this.userService.getByUsername(dto.username)
 
 		if (!user) return true
 		return false

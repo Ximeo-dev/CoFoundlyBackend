@@ -51,6 +51,14 @@ export class UserService {
 		})
 	}
 
+	async getByUsername(username: string) {
+		return this.prisma.user.findUnique({
+			where: {
+				username: username.toLowerCase(),
+			},
+		})
+	}
+
 	async getUserSecuritySettingsById(userId: string) {
 		return this.prisma.securitySettings.findUnique({
 			where: {
