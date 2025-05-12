@@ -12,6 +12,20 @@ export class RegisterDto {
 	@IsNotEmpty()
 	email: string
 
+	@IsNotEmpty()
+	@MinLength(4, {
+		message: 'Имя пользователя должно состоять минимум из 4 символов',
+	})
+	@MaxLength(16, {
+		message: 'Имя пользователя должно содержать не более 16 символов',
+	})
+	@IsString()
+	@Matches(/^[a-zA-Z0-9_-]+$/, {
+		message:
+			'Имя пользователя может состоять только из букв английского алфавита, цифр, _, -',
+	})
+	username: string
+
 	@MinLength(8, {
 		message: 'Пароль должен состоять минимум из 8 символов',
 	})

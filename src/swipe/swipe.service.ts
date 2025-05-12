@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { ComputingService } from './computing.service'
 import { SwipeAction, SwipeIntent } from './types/swipe.types'
-import { calculateAge } from 'src/utils/calculate-age'
 import { UserProfileService } from 'src/profile/user-profile.service'
 
 @Injectable()
@@ -25,12 +24,10 @@ export class SwipeService {
 
 		if (!currentUser) throw new NotFoundException('User profile not found')
 
-		const nonet = [currentUserId]
-
 		const candidates = await this.prisma.userProfile.findMany({
 			where: {
 				userId: {
-					notIn: nonet,
+					not: currentUserId,
 				},
 				NOT: {
 					receivedSwipes: {
@@ -61,6 +58,8 @@ export class SwipeService {
 		scored.sort((a, b) => b.score - a.score)
 
 		const firstScored = scored[0]?.candidate
+
+		if (!firstScored) return null
 		return this.userProfileService.getForeignUserProfile(firstScored.userId)
 	}
 

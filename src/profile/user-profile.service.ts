@@ -38,8 +38,6 @@ export class UserProfileService {
 				)
 			}
 
-			console.log(profile)
-
 			return this.prepareToResponse(profile, false)
 		} catch (error) {
 			if (error instanceof NotFoundException) {
