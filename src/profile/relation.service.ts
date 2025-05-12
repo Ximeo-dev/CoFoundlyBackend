@@ -1,8 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
-
-type OneToManyType = 'job' | 'projectRole'
-type ManyToManyType = 'skill' | 'language' | 'industry'
+import { ManyToManyType, OneToManyType } from './types/profile.types'
 
 @Injectable()
 export class RelationService {

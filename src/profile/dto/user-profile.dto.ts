@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types'
 import { Exclude, Expose, Type } from 'class-transformer'
 import {
 	ArrayMaxSize,
@@ -12,15 +13,18 @@ import {
 	MinLength,
 } from 'class-validator'
 import { subYears } from 'date-fns'
+import { Entity } from 'src/entities/entities.service'
 import { Flatten } from 'src/utils/flatten-transformer'
 
-export class CreateProfileDto {
+export class CreateUserProfileDto {
 	@IsString()
 	@IsNotEmpty()
 	name: string
 
 	@IsDate()
-	@MaxDate(subYears(new Date(), 14), { message: 'Вам должно быть не менее 14 лет' })
+	@MaxDate(subYears(new Date(), 14), {
+		message: 'Вам должно быть не менее 14 лет',
+	})
 	@Type(() => Date)
 	birthDate: string
 
@@ -62,57 +66,7 @@ export class CreateProfileDto {
 	industries: string[]
 }
 
-export class UpdateProfileDto {
-	@IsOptional()
-	@IsString()
-	@IsNotEmpty()
-	name?: string
-
-	// @IsOptional()
-	// @IsDate()
-	// @MaxDate(subYears(new Date(), 14), { message: 'Вам должно быть не менее 14 лет' })
-	// @Type(() => Date)
-	// birthDate?: string
-
-	@IsOptional()
-	@IsString()
-	@Expose()
-	@MinLength(10)
-	@MaxLength(256)
-	bio?: string
-
-	@IsOptional()
-	@IsString()
-	@Expose()
-	// @IsNotEmpty()
-	job?: string
-
-	@IsOptional()
-	@IsArray()
-	@ArrayMaxSize(20)
-	@IsString({ each: true })
-	@Expose()
-	skills?: string[]
-
-	@IsOptional()
-	@IsArray()
-	@ArrayMaxSize(5)
-	@IsUrl({ protocols: ['https'] }, { each: true })
-	@Expose()
-	portfolio?: string[]
-
-	@IsOptional()
-	@IsArray()
-	@ArrayMaxSize(5)
-	@IsString({ each: true })
-	languages?: string[]
-
-	@IsOptional()
-	@IsArray()
-	@ArrayMaxSize(5)
-	@IsString({ each: true })
-	industries?: string[]
-}
+export class UpdateUserProfileDto extends PartialType(CreateUserProfileDto) {}
 
 export class UserProfileResponseDto {
 	@Exclude()
@@ -145,16 +99,16 @@ export class UserProfileResponseDto {
 	bio: string
 
 	@Expose()
-	job: string
+	job: Entity
 
 	@Expose()
-	languages: string[]
+	languages: Entity[]
 
 	@Expose()
-	skills: string[]
+	skills: Entity[]
 
 	@Expose()
-	industries: string[]
+	industries: Entity[]
 
 	@Expose()
 	portfolio: string[]
