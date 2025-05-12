@@ -7,8 +7,8 @@ import { instanceToPlain, plainToClass } from 'class-transformer'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { calculateAge } from 'src/utils/calculate-age'
 import {
-	CreateProfileDto,
-	UpdateProfileDto,
+	CreateUserProfileDto,
+	UpdateUserProfileDto,
 	UserProfileResponseDto,
 } from './dto/user-profile.dto'
 import { RelationService } from './relation.service'
@@ -65,7 +65,7 @@ export class UserProfileService {
 		})
 	}
 
-	async createUserProfile(userId: string, dto: CreateProfileDto) {
+	async createUserProfile(userId: string, dto: CreateUserProfileDto) {
 		const userProfile = await this.prisma.userProfile.findUnique({
 			where: { userId },
 		})
@@ -120,15 +120,7 @@ export class UserProfileService {
 				},
 			})
 
-			const age = profile.birthDate ? calculateAge(profile.birthDate) : null
-
-			return plainToClass(
-				UserProfileResponseDto,
-				{ ...profile, age },
-				{
-					excludeExtraneousValues: true,
-				},
-			)
+			return this.prepareToResponse(profile, false)
 		} catch (error) {
 			if (error.code === 'P2002') {
 				throw new BadRequestException('Profile with this userId already exists')
@@ -137,7 +129,7 @@ export class UserProfileService {
 		}
 	}
 
-	async updateUserProfile(userId: string, dto: UpdateProfileDto) {
+	async updateUserProfile(userId: string, dto: UpdateUserProfileDto) {
 		const userProfile = await this.prisma.userProfile.findUnique({
 			where: { userId },
 		})
@@ -149,6 +141,8 @@ export class UserProfileService {
 		const baseData = instanceToPlain(dto, {
 			exposeUnsetFields: false,
 		}) as Record<string, any>
+
+		console.log(baseData)
 
 		const jobUpdate = await this.relationService.getOneToManyRelationData(
 			baseData['job'],
@@ -199,17 +193,7 @@ export class UserProfileService {
 				},
 			})
 
-			const age = updatedProfile.birthDate
-				? calculateAge(updatedProfile.birthDate)
-				: null
-
-			return plainToClass(
-				UserProfileResponseDto,
-				{ ...updatedProfile, age },
-				{
-					excludeExtraneousValues: true,
-				},
-			)
+			return this.prepareToResponse(updatedProfile, false)
 		} catch (error) {
 			if (error.code === 'P2025') {
 				throw new BadRequestException('Profile not found')
@@ -227,7 +211,7 @@ export class UserProfileService {
 		} catch (error) {
 			if (error.code === 'P2025') {
 				throw new NotFoundException(
-					`Profile with userId ${userId} does not exist`,
+					`Profile with id ${userId} does not exist`,
 				)
 			}
 			throw error
@@ -242,7 +226,7 @@ export class UserProfileService {
 					hasAvatar: status,
 				},
 			})
-			return { userId, deleted: true }
+			return { userId, status }
 		} catch (error) {
 			if (error.code === 'P2025') {
 				throw new NotFoundException(

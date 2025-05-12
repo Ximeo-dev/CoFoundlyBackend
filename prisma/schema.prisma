@@ -86,12 +86,25 @@ model Project {
   @@index([ownerId])
 }
 
+model ProjectRequirement {
+  id         String   @id @default(uuid()) @db.Uuid
+  projectId  String @db.Uuid @unique
+  project    Project  @relation("ProjectRequirements", fields: [projectId], references: [id], onDelete: Cascade)
+  industryId Int?
+  industry Industry? @relation("ProjectsRequirementIndustry", fields: [industryId], references: [id])
+  languages Language[]
+  skills Skill[]
+  jobs Job[]
+
+  @@index([projectId])
+}
+
 model ProjectMember {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
   user      User     @relation("ProjectMemberToUser", fields: [userId], references: [id])
   projectId String   @db.Uuid
-  project   Project  @relation("ProjectMembers", fields: [projectId], references: [id])
+  project   Project  @relation("ProjectMembers", fields: [projectId], references: [id], onDelete: Cascade)
   roleId String @db.Uuid
   role ProjectRole @relation("ProjectMemberRole", fields: [roleId], references: [id])
   joinedAt  DateTime @default(now())
@@ -104,21 +117,8 @@ model ProjectRole {
   id String @id @default(uuid()) @db.Uuid
   name String @db.VarChar(255)
   projectId String @db.Uuid
-  project Project @relation("ProjectRoles", fields: [projectId], references: [id])
+  project Project @relation("ProjectRoles", fields: [projectId], references: [id], onDelete: Cascade)
   projectMembers ProjectMember[] @relation("ProjectMemberRole")
-
-  @@index([projectId])
-}
-
-model ProjectRequirement {
-  id         String   @id @default(uuid()) @db.Uuid
-  projectId  String @db.Uuid @unique
-  project    Project  @relation("ProjectRequirements", fields: [projectId], references: [id])
-  industryId Int
-  industry Industry @relation("ProjectsRequirementIndustry", fields: [industryId], references: [id])
-  languages Language[]
-  skills Skill[]
-  jobs Job[]
 
   @@index([projectId])
 }
@@ -128,7 +128,7 @@ model ProjectRequest {
   userId     String   @db.Uuid
   user       User     @relation("UserRequests", fields: [userId], references: [id])
   projectId  String   @db.Uuid
-  project    Project  @relation("ProjectRequests", fields: [projectId], references: [id])
+  project    Project  @relation("ProjectRequests", fields: [projectId], references: [id], onDelete: Cascade)
   message    String?
   status     ProjectRequestStatus @default(PENDING)
   createdAt  DateTime @default(now())

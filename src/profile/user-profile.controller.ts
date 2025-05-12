@@ -13,7 +13,10 @@ import {
 } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
-import { CreateProfileDto, UpdateProfileDto } from './dto/user-profile.dto'
+import {
+	CreateUserProfileDto,
+	UpdateUserProfileDto,
+} from './dto/user-profile.dto'
 import { UserProfileService } from './user-profile.service'
 
 @Controller('profile/user')
@@ -38,7 +41,7 @@ export class UserProfileController {
 	@Auth()
 	async createProfile(
 		@CurrentUser('id') id: string,
-		@Body() dto: CreateProfileDto,
+		@Body() dto: CreateUserProfileDto,
 	) {
 		return this.userProfileService.createUserProfile(id, dto)
 	}
@@ -49,7 +52,7 @@ export class UserProfileController {
 	@Auth()
 	async updateProfile(
 		@CurrentUser('id') id: string,
-		@Body() dto: UpdateProfileDto,
+		@Body() dto: UpdateUserProfileDto,
 	) {
 		return this.userProfileService.updateUserProfile(id, dto)
 	}

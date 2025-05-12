@@ -5,3 +5,6 @@ export type UserProfileExtended = {
 	languages: Language[]
 	industries: Industry[]
 } & { id: number; userId: string }
+
+export type OneToManyType = 'job' | 'projectRole' | 'industry'
+export type ManyToManyType = 'skill' | 'language' | 'industry' | 'job'
