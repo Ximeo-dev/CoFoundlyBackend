@@ -12,6 +12,7 @@ import {
 	MinLength,
 } from 'class-validator'
 import { subYears } from 'date-fns'
+import { Flatten } from 'src/utils/flatten-transformer'
 
 export class CreateProfileDto {
 	@IsString()
@@ -119,6 +120,14 @@ export class UserProfileResponseDto {
 
 	@Expose()
 	userId: string
+
+	@Expose()
+	@Flatten('user')
+	username: string
+
+	@Expose()
+	@Flatten('user')
+	displayUsername: string
 
 	@Expose()
 	name: string

@@ -18,4 +18,6 @@ import { ProjectProfileService } from './project-profile.service'
 @Controller('profile/project')
 export class ProjectProfileController {
 	constructor(private readonly projectProfileService: ProjectProfileService) {}
+
+	
 }
