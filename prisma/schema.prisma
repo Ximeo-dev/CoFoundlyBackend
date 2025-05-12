@@ -10,20 +10,26 @@ datasource db {
 model User {
   id               String            @id @default(uuid()) @db.Uuid
   email            String            @unique
+  username         String            @unique
+  displayUsername  String            @unique
   role             UserRole          @default(USER)
+  securitySettings SecuritySettings?
+  profile           UserProfile?
+  projectsRequests ProjectRequest[] @relation("UserRequests")
+  projectsMember ProjectMember[] @relation("ProjectMemberToUser")
+  projectsOwned Project[] @relation("ProjectOwner")
+
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  BlogPost         BlogPost[]
-  Idea             Idea[]
-  Message          Message[]
-  OAuthAccount     OAuthAccount[]
-  projectsOwned    Project[]         @relation("UserProjects")
-  securitySettings SecuritySettings?
+
   Subscription     Subscription[]
-  Chat             Chat[]            @relation("ChatParticipants")
+  // Chat             Chat[]            @relation("ChatParticipants")
   interests        Interest[]        @relation("InterestToUser")
-  projectsJoined   Project[]         @relation("ProjectMembers")
-  profile           UserProfile?
+  BlogPost         BlogPost[]
+  // Message          Message[]
+  OAuthAccount     OAuthAccount[]
+
+  @@index([email, username])
 }
 
 enum UserRole {
@@ -63,21 +69,86 @@ model UserProfile {
 }
 
 model Project {
-  id          Int           @id @default(autoincrement())
+  id          String        @id @default(uuid()) @db.Uuid
   name        String
   description String
+  hasAvatar   Boolean       @default(false)
   ownerId     String        @db.Uuid
+  owner       User @relation("ProjectOwner", fields: [ownerId], references: [id])
+  roles ProjectRole[]       @relation("ProjectRoles")
+  members ProjectMember[]   @relation("ProjectMembers")
+  projectRequirement ProjectRequirement? @relation("ProjectRequirements")
+  projectRequests ProjectRequest[] @relation("ProjectRequests")
+
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  Idea        Idea[]
-  owner       User          @relation("UserProjects", fields: [ownerId], references: [id])
-  teamMembers User[]        @relation("ProjectMembers")
+
+  @@index([ownerId])
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation("ProjectMemberToUser", fields: [userId], references: [id])
+  projectId String   @db.Uuid
+  project   Project  @relation("ProjectMembers", fields: [projectId], references: [id])
+  roleId String @db.Uuid
+  role ProjectRole @relation("ProjectMemberRole", fields: [roleId], references: [id])
+  joinedAt  DateTime @default(now())
+  
+  @@unique([userId, projectId])
+  @@index([projectId, userId])
+}
+
+model ProjectRole {
+  id String @id @default(uuid()) @db.Uuid
+  name String @db.VarChar(255)
+  projectId String @db.Uuid
+  project Project @relation("ProjectRoles", fields: [projectId], references: [id])
+  projectMembers ProjectMember[] @relation("ProjectMemberRole")
+
+  @@index([projectId])
+}
+
+model ProjectRequirement {
+  id         String   @id @default(uuid()) @db.Uuid
+  projectId  String @db.Uuid @unique
+  project    Project  @relation("ProjectRequirements", fields: [projectId], references: [id])
+  industryId Int
+  industry Industry @relation("ProjectsRequirementIndustry", fields: [industryId], references: [id])
+  languages Language[]
+  skills Skill[]
+  jobs Job[]
+
+  @@index([projectId])
+}
+
+model ProjectRequest {
+  id         BigInt   @id @default(autoincrement())
+  userId     String   @db.Uuid
+  user       User     @relation("UserRequests", fields: [userId], references: [id])
+  projectId  String   @db.Uuid
+  project    Project  @relation("ProjectRequests", fields: [projectId], references: [id])
+  message    String?
+  status     ProjectRequestStatus @default(PENDING)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, projectId])
+  @@index([projectId, userId])
+}
+
+enum ProjectRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 model Job {
   id    Int @id @default(autoincrement())
   name String @unique @db.VarChar(255)
   profiles UserProfile[]
+  projectsRequirement ProjectRequirement[]
 
   @@index([name])
 }
@@ -86,6 +157,7 @@ model Skill {
   id    Int @id @default(autoincrement())
   name  String @unique @db.VarChar(255)
   profiles UserProfile[]
+  projectsRequirement ProjectRequirement[]
 
   @@index([name])
 }
@@ -94,6 +166,7 @@ model Language {
   id Int @id @default(autoincrement())
   name String @unique @db.VarChar(255)
   profiles UserProfile[]
+  projectsRequirement ProjectRequirement[]
 
   @@index([name])
 }
@@ -102,15 +175,10 @@ model Industry {
   id Int @id @default(autoincrement())
   name String @unique @db.VarChar(255)
   profiles UserProfile[]
+  projectsRequirement ProjectRequirement[] @relation("ProjectsRequirementIndustry")
 
   @@index([name])
 }
-
-// model ProjectRole {
-//   id Int @id @default(autoincrement())
-//   name String @unique @db.VarChar(255)
-//   profiles UserProfile[]
-// }
 
 model Interest {
   id   Int          @id @default(autoincrement())
@@ -159,18 +227,33 @@ model Match {
   @@unique([profileAId, profileBId])
 }
 
-model Idea {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  ownerId     String   @db.Uuid
-  projectId   Int
-  likes       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  owner       User     @relation(fields: [ownerId], references: [id])
-  project     Project  @relation(fields: [projectId], references: [id])
+enum MatchStatus {
+  ACCEPTED
+  REJECTED
+  PENDING
 }
+
+// model Chat {
+//   id           String    @id @default(uuid()) @db.Uuid
+//   type         ChatType  @default(DIRECT)
+//   createdAt    DateTime  @default(now())
+//   updatedAt    DateTime  @updatedAt
+//   messages     Message[]
+//   participants User[]    @relation("ChatParticipants")
+// }
+
+// model Message {
+//   id        String   @id @default(uuid()) @db.Uuid
+//   chatId    String
+//   chat      Chat     @relation(fields: [chatId], references: [id])
+//   senderId  String   @db.Uuid
+//   sender    User     @relation(fields: [senderId], references: [id])
+//   content   String
+//   sentAt    DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   @@index([senderId, chatId])
+// }
 
 model BlogPost {
   id         Int       @id @default(autoincrement())
@@ -195,28 +278,6 @@ model Tag {
   id        Int        @id @default(autoincrement())
   name      String     @unique
   blogPosts BlogPost[] @relation("BlogPostTags")
-}
-
-model Chat {
-  id           Int       @id @default(autoincrement())
-  type         ChatType  @default(DIRECT)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  messages     Message[]
-  participants User[]    @relation("ChatParticipants")
-}
-
-model Message {
-  id        Int      @id @default(autoincrement())
-  chatId    Int
-  senderId  String   @db.Uuid
-  content   String
-  sentAt    DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chat      Chat     @relation(fields: [chatId], references: [id])
-  sender    User     @relation(fields: [senderId], references: [id])
-
-  @@index([senderId, chatId])
 }
 
 model PricingPlan {
@@ -258,12 +319,6 @@ enum InterestType {
   FIND_PROJECT
   FIND_PEOPLE
   HAVE_PROJECT
-}
-
-enum MatchStatus {
-  ACCEPTED
-  REJECTED
-  PENDING
 }
 
 enum ChatType {

@@ -71,6 +71,8 @@ export class UserService {
 		return this.prisma.user.create({
 			data: {
 				email: dto.email.toLowerCase(),
+				username: dto.username.toLowerCase(),
+				displayUsername: dto.username,
 				securitySettings: passwordHash
 					? {
 							create: {
