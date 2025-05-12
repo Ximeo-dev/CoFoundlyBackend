@@ -42,3 +42,19 @@ export class EmailAvailableDto {
 	@IsNotEmpty()
 	email: string
 }
+
+export class UsernameAvailableDto {
+	@IsNotEmpty()
+	@MinLength(4, {
+		message: 'Имя пользователя должно состоять минимум из 4 символов',
+	})
+	@MaxLength(16, {
+		message: 'Имя пользователя должно содержать не более 16 символов',
+	})
+	@IsString()
+	@Matches(/^[a-zA-Z0-9_-]+$/, {
+		message:
+			'Имя пользователя может состоять только из букв английского алфавита, цифр, _, -',
+	})
+	username: string
+}
