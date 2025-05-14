@@ -15,29 +15,40 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
 import { ImageValidationPipe } from 'src/pipes/image-validation-pipe'
-import { AVATAR_SIZES, ImagesService } from './images.service'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { Response } from 'express'
+import { ImagesService } from './images.service'
+import { AVATAR_SIZES } from 'src/constants/constants'
+import { AvatarType } from './types/image.types'
+import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
 
 @Controller('images')
 export class ImagesController {
 	constructor(private readonly imagesService: ImagesService) {}
 
 	@HttpCode(200)
-	@Post('avatar')
+	@Post('avatar/user')
 	@UseInterceptors(
 		FileInterceptor('avatar', {
 			limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
 		}),
 	)
 	@Auth()
-	async uploadAvatar(
+	async uploadUserAvatar(
 		@UploadedFile(ImageValidationPipe) file: Express.Multer.File,
 		@CurrentUser('id') userId: string,
 		@Res() res: Response,
 	) {
-		await this.imagesService.processAndStoreAvatar(userId, file.buffer)
-		const stream = await this.imagesService.getAvatar(userId, 512)
+		await this.imagesService.processAndStoreAvatar(
+			userId,
+			file.buffer,
+			AvatarType.USER,
+		)
+		const stream = await this.imagesService.getAvatar(
+			userId,
+			512,
+			AvatarType.USER,
+		)
 
 		res.set({
 			'Content-Type': 'image/webp',
@@ -48,18 +59,57 @@ export class ImagesController {
 	}
 
 	@HttpCode(200)
-	@Delete('avatar')
+	@Post('avatar/project/:id')
+	@UseInterceptors(
+		FileInterceptor('avatar', {
+			limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
+		}),
+	)
 	@Auth()
-	async deleteAvatar(
-		@CurrentUser('id') userId: string,
+	async uploadProjectAvatar(
+		@UploadedFile(ImageValidationPipe) file: Express.Multer.File,
+		@Param('id') id: string,
+		@Res() res: Response,
 	) {
-		await this.imagesService.deleteAvatar(userId)
+		await this.imagesService.processAndStoreAvatar(
+			id,
+			file.buffer,
+			AvatarType.PROJECT,
+		)
+		const stream = await this.imagesService.getAvatar(
+			id,
+			512,
+			AvatarType.PROJECT,
+		)
+
+		res.set({
+			'Content-Type': 'image/webp',
+			'Cache-Control': 'public, max-age=31536000',
+		})
+
+		stream.pipe(res)
+	}
+
+	@HttpCode(200)
+	@Delete('avatar/user')
+	@Auth()
+	async deleteUserAvatar(@CurrentUser('id') userId: string) {
+		await this.imagesService.deleteAvatar(userId, AvatarType.USER)
 		return true
 	}
 
-	@Get('avatar/:userId/:size')
+	@HttpCode(200)
+	@Delete('avatar/project/:id')
+	@Auth()
+	async deleteAvatar(@Param('id') id: string) {
+		await this.imagesService.deleteAvatar(id, AvatarType.PROJECT)
+		return true
+	}
+
+	@Get('avatar/:type/:id/:size')
 	async getAvatar(
-		@Param('userId', ParseUUIDPipe) userId: string,
+		@Param('type', new EnumValidationPipe(AvatarType)) type: AvatarType,
+		@Param('id', ParseUUIDPipe) id: string,
 		@Param('size', ParseIntPipe) size: number,
 		@Res() res: Response,
 	) {
@@ -69,7 +119,7 @@ export class ImagesController {
 			)
 		}
 
-		const stream = await this.imagesService.getAvatar(userId, size)
+		const stream = await this.imagesService.getAvatar(id, size, type)
 
 		res.set({
 			'Content-Type': 'image/webp',

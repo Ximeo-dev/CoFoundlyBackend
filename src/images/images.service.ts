@@ -1,24 +1,32 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import * as sharp from 'sharp'
 import { S3FileNotFoundException } from 'src/exceptions/S3FileNotFoundException'
+import { ProjectProfileService } from 'src/profile/project-profile.service'
 import { UserProfileService } from 'src/profile/user-profile.service'
 import { S3Service } from 'src/s3/s3.service'
-
-export const AVATAR_SIZES = [512, 128, 64]
+import { AvatarType } from './types/image.types'
+import { AVATAR_SIZES } from 'src/constants/constants'
 
 @Injectable()
 export class ImagesService {
 	constructor(
 		private readonly S3Service: S3Service,
 		private readonly userProfileService: UserProfileService,
+		private readonly projectProfileService: ProjectProfileService,
 	) {}
 
-	async processAndStoreAvatar(userId: string, buffer: Buffer) {
-		const profile = await this.userProfileService.getUserProfile(userId)
+	async processAndStoreAvatar(id: string, buffer: Buffer, type: AvatarType) {
+		if (type === AvatarType.USER) {
+			const profile = await this.userProfileService.getUserProfile(id)
 
-		if (!profile) throw new NotFoundException('User profile not found')
+			if (!profile) throw new NotFoundException('User profile not found')
+		} else if (type === AvatarType.PROJECT) {
+			const project = await this.projectProfileService.getProjectById(id)
 
-		const baseKey = `avatars/${userId}`
+			if (!project) throw new NotFoundException('Project not found')
+		}
+
+		const baseKey = `avatars/${type}/${id}`
 
 		await Promise.all(
 			AVATAR_SIZES.map((size) =>
@@ -38,15 +46,25 @@ export class ImagesService {
 
 		await Promise.all(uploadTasks)
 
-		await this.userProfileService.setHasAvatar(userId, true)
+		if (type === AvatarType.USER) {
+			await this.userProfileService.setHasAvatar(id, true)
+		} else if (type === AvatarType.PROJECT) {
+			await this.projectProfileService.setHasAvatar(id, true)
+		}
 	}
 
-	async deleteAvatar(userId: string) {
-		const profile = await this.userProfileService.getUserProfile(userId)
+	async deleteAvatar(id: string, type: AvatarType) {
+		if (type === AvatarType.USER) {
+			const profile = await this.userProfileService.getUserProfile(id)
 
-		if (!profile) throw new NotFoundException('User profile not found')
+			if (!profile) throw new NotFoundException('User profile not found')
+		} else if (type === AvatarType.PROJECT) {
+			const project = await this.projectProfileService.getProjectById(id)
 
-		const baseKey = `avatars/${userId}`
+			if (!project) throw new NotFoundException('Project not found')
+		}
+
+		const baseKey = `avatars/${type}/${id}`
 
 		await Promise.all(
 			AVATAR_SIZES.map((size) =>
@@ -54,15 +72,25 @@ export class ImagesService {
 			),
 		)
 
-		await this.userProfileService.setHasAvatar(userId, false)
+		if (type === AvatarType.USER) {
+			await this.userProfileService.setHasAvatar(id, true)
+		} else if (type === AvatarType.PROJECT) {
+			await this.projectProfileService.setHasAvatar(id, true)
+		}
 	}
 
-	async getAvatar(userId: string, size: number) {
-		const profile = await this.userProfileService.getUserProfile(userId)
+	async getAvatar(id: string, size: number, type: AvatarType) {
+		if (type === AvatarType.USER) {
+			const profile = await this.userProfileService.getUserProfile(id)
 
-		if (!profile) throw new S3FileNotFoundException('User profile not found')
+			if (!profile) throw new S3FileNotFoundException('User profile not found')
+		} else if (type === AvatarType.PROJECT) {
+			const project = await this.projectProfileService.getProjectById(id)
 
-		let key = `avatars/${userId}-${size}.webp`
+			if (!project) throw new S3FileNotFoundException('Project not found')
+		}
+
+		let key = `avatars/${type}/${id}-${size}.webp`
 
 		return this.S3Service.getFileStream(key)
 	}

@@ -35,7 +35,7 @@ export class UserProfileService {
 
 			if (!profile) {
 				throw new NotFoundException(
-					`Profile with userId ${userId} does not exist`,
+					`Profile with id ${userId} does not exist`,
 				)
 			}
 
@@ -142,8 +142,6 @@ export class UserProfileService {
 			exposeUnsetFields: false,
 		}) as Record<string, any>
 
-		console.log(baseData)
-
 		const jobUpdate = await this.relationService.getOneToManyRelationData(
 			baseData['job'],
 			'job',
@@ -230,7 +228,7 @@ export class UserProfileService {
 		} catch (error) {
 			if (error.code === 'P2025') {
 				throw new NotFoundException(
-					`Profile with userId ${userId} does not exist`,
+					`Profile with id ${userId} does not exist`,
 				)
 			}
 			throw error
