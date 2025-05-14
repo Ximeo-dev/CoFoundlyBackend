@@ -1,0 +1,21 @@
+[
+	{ "name": "Artificial Intelligence and Machine Learning" },
+	{ "name": "Internet of Things (IoT)" },
+	{ "name": "Cybersecurity" },
+	{ "name": "Blockchain" },
+	{ "name": "FinTech" },
+	{ "name": "Cloud Computing" },
+	{ "name": "Big Data and Data Analytics" },
+	{ "name": "Software and App Development" },
+	{ "name": "Augmented Reality (AR) and Virtual Reality (VR)" },
+	{ "name": "Gaming" },
+	{ "name": "HealthTech (MedTech)" },
+	{ "name": "EdTech" },
+	{ "name": "Automotive Tech" },
+	{ "name": "AdTech" },
+	{ "name": "DevOps" },
+	{ "name": "UI/UX Design" },
+	{ "name": "Operational Technology (OT)" },
+	{ "name": "Green Tech" },
+	{ "name": "Retail Tech" }
+]

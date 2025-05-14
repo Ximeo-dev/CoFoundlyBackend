@@ -10,6 +10,6 @@ import { ProjectProfileService } from './project-profile.service'
 	imports: [UserModule],
 	controllers: [UserProfileController, ProjectProfileController],
 	providers: [UserProfileService, ProjectProfileService, RelationService],
-	exports: [UserProfileService],
+	exports: [UserProfileService, ProjectProfileService],
 })
 export class ProfileModule {}
