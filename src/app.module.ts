@@ -13,6 +13,7 @@ import { PrismaModule } from './prisma/prisma.module'
 import { S3Module } from './s3/s3.module'
 import { TwoFactorModule } from './two-factor/two-factor.module'
 import { EntitiesModule } from './entities/entities.module'
+import { ChatModule } from './chat/chat.module';
 
 @Module({
 	imports: [
@@ -31,6 +32,7 @@ import { EntitiesModule } from './entities/entities.module'
 		S3Module,
 		TwoFactorModule,
 		EntitiesModule,
+		ChatModule,
 	],
 	controllers: [AppController],
 })

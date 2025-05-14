@@ -98,7 +98,6 @@ export class RelationService {
 			}
 			// Для update: если null или пустая строка, отключаем связь
 			else if (operation === 'update') {
-				console.log('disconnect')
 				return {
 					[fieldName]: {
 						disconnect: true,

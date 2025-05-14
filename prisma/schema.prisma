@@ -23,10 +23,10 @@ model User {
   updatedAt        DateTime          @updatedAt
 
   Subscription     Subscription[]
-  // Chat             Chat[]            @relation("ChatParticipants")
   interests        Interest[]        @relation("InterestToUser")
   BlogPost         BlogPost[]
-  // Message          Message[]
+  chats            Chat[]            @relation("ChatParticipants")
+  userMessages     Message[]         @relation("UserMessages")
   OAuthAccount     OAuthAccount[]
 
   @@index([email, username])
@@ -79,6 +79,7 @@ model Project {
   members ProjectMember[]   @relation("ProjectMembers")
   projectRequirement ProjectRequirement? @relation("ProjectRequirements")
   projectRequests ProjectRequest[] @relation("ProjectRequests")
+  chats Chat[] @relation("ProjectChats")
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -208,8 +209,8 @@ model Swipe {
   isLiked      Boolean
   createdAt  DateTime @default(now())
 
-  fromProfile   UserProfile     @relation("SwipesFrom", fields: [fromProfileId], references: [id])
-  toProfile     UserProfile     @relation("SwipesTo", fields: [toProfileId], references: [id])
+  fromProfile   UserProfile     @relation("SwipesFrom", fields: [fromProfileId], references: [id], onDelete: Cascade)
+  toProfile     UserProfile     @relation("SwipesTo", fields: [toProfileId], references: [id], onDelete: Cascade)
 
   @@unique([fromProfileId, toProfileId])
   @@index([toProfileId])
@@ -221,8 +222,8 @@ model Match {
   profileBId    Int
   createdAt  DateTime @default(now())
 
-  profileA      UserProfile     @relation("MatchesA", fields: [profileAId], references: [id])
-  profileB      UserProfile     @relation("MatchesB", fields: [profileBId], references: [id])
+  profileA      UserProfile     @relation("MatchesA", fields: [profileAId], references: [id], onDelete: Cascade)
+  profileB      UserProfile     @relation("MatchesB", fields: [profileBId], references: [id], onDelete: Cascade)
 
   @@unique([profileAId, profileBId])
 }
@@ -233,27 +234,37 @@ enum MatchStatus {
   PENDING
 }
 
-// model Chat {
-//   id           String    @id @default(uuid()) @db.Uuid
-//   type         ChatType  @default(DIRECT)
-//   createdAt    DateTime  @default(now())
-//   updatedAt    DateTime  @updatedAt
-//   messages     Message[]
-//   participants User[]    @relation("ChatParticipants")
-// }
+model Chat {
+  id           String    @id @default(uuid()) @db.Uuid
+  type         ChatType  @default(DIRECT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[] @relation("ChatMessages")
+  participants User[]    @relation("ChatParticipants")
+  projectId String? @db.Uuid
+  project Project? @relation("ProjectChats", fields: [projectId], references: [id])
 
-// model Message {
-//   id        String   @id @default(uuid()) @db.Uuid
-//   chatId    String
-//   chat      Chat     @relation(fields: [chatId], references: [id])
-//   senderId  String   @db.Uuid
-//   sender    User     @relation(fields: [senderId], references: [id])
-//   content   String
-//   sentAt    DateTime @default(now())
-//   updatedAt DateTime @updatedAt
+  @@index([projectId])
+}
 
-//   @@index([senderId, chatId])
-// }
+enum ChatType {
+  DIRECT
+  PROJECT
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.Uuid
+  chatId    String   @db.Uuid
+  chat      Chat     @relation("ChatMessages", fields: [chatId], references: [id])
+  senderId  String   @db.Uuid
+  sender    User     @relation("UserMessages", fields: [senderId], references: [id])
+  content   String
+  sentAt    DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isEdited Boolean @default(false)
+
+  @@index([senderId, chatId])
+}
 
 model BlogPost {
   id         Int       @id @default(autoincrement())
@@ -319,9 +330,4 @@ enum InterestType {
   FIND_PROJECT
   FIND_PEOPLE
   HAVE_PROJECT
-}
-
-enum ChatType {
-  DIRECT
-  GROUP
 }

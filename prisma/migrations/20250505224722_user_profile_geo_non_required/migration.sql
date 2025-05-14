@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE "UserProfile" ALTER COLUMN "country" DROP NOT NULL,
-ALTER COLUMN "city" DROP NOT NULL,
-ALTER COLUMN "timezone" DROP NOT NULL;

@@ -297,4 +297,23 @@ export class ProjectProfileService {
 		})
 		return { projectId, deleted: true }
 	}
+
+	async setHasAvatar(projectId: string, status: boolean) {
+		try {
+			await this.prisma.project.update({
+				where: { id: projectId },
+				data: {
+					hasAvatar: status,
+				},
+			})
+			return { projectId, status }
+		} catch (error) {
+			if (error.code === 'P2025') {
+				throw new NotFoundException(
+					`Project with id ${projectId} does not exist`,
+				)
+			}
+			throw error
+		}
+	}
 }
