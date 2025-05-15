@@ -6,6 +6,7 @@ import { getEnvVar } from './utils/env'
 import { ValidationPipe } from '@nestjs/common'
 import * as dotenv from 'dotenv'
 import * as dotenvExpand from 'dotenv-expand'
+import { CustomSocketIoAdapter } from './middlewares/custom-socket-adapter'
 
 async function bootstrap() {
 	;(BigInt.prototype as any).toJSON = function () {
@@ -32,6 +33,8 @@ async function bootstrap() {
 			transform: true,
 		}),
 	)
+
+	app.useWebSocketAdapter(new CustomSocketIoAdapter(app))
 
 	await app.listen(getEnvVar('PORT'))
 }

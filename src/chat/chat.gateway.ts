@@ -1,22 +1,31 @@
-import { Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
-import { JwtService } from '@nestjs/jwt'
+import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common'
 import {
+	ConnectedSocket,
 	MessageBody,
 	OnGatewayConnection,
 	OnGatewayDisconnect,
-	OnGatewayInit,
 	SubscribeMessage,
 	WebSocketGateway,
 	WebSocketServer,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { WSAuth } from 'src/auth/decorators/ws-auth.decorator'
-import { UserService } from 'src/user/user.service'
 import { ChatService } from './chat.service'
-import { CurrentUser } from 'src/auth/decorators/user.decorator'
+import { ChatClientEvent, ChatServerEvent } from './types/chat-events'
+import { AuthenticatedSocket } from './types/socket.types'
+import { WSCurrentUser } from 'src/auth/decorators/ws-user.decorator'
+import { AuthSocketService } from 'src/auth/socket/auth-socket.service'
+import {
+	DeleteMessageDto,
+	GetMessagesDto,
+	MarkReadDto,
+	MessageEditDto,
+	SendMessageDto,
+	UserTypingDto,
+} from './dto/message.dto'
+import { WsExceptionFilter } from 'src/exceptions/WsExceptionFilter'
 
 @WebSocketGateway({
+	namespace: '/chat',
 	cors: {
 		origin: ['http://localhost:3000', 'https://cofoundly.infinitum.su'],
 	},
@@ -27,49 +36,87 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	constructor(
 		private readonly chatService: ChatService,
-		private jwtService: JwtService,
-		private configService: ConfigService,
-		private userService: UserService,
+		private readonly authSocketService: AuthSocketService,
 	) {}
 
-	async handleConnection(client: Socket) {
-		const token =
-			client.handshake.auth?.token ||
-			client.handshake.headers?.authorization?.split(' ')[1]
-
-		if (!token) {
-			this.server.emit('auth_error', 'Missing token')
-			return client.disconnect()
-		}
-
-		try {
-			const payload = this.jwtService.verify(token, {
-				secret: this.configService.getOrThrow('JWT_SECRET'),
-			})
-			const user = await this.userService.getByIdWithSecuritySettings(
-				payload.id,
-			)
-			if (!user || user.securitySettings?.jwtTokenVersion !== payload.version) {
-				this.server.emit('auth_error', 'Invalid or expired token')
-				return client.disconnect()
-			}
-
-			;(client as any).user = user
-		} catch (err) {
-			this.server.emit('auth_error', 'Invalid or expired token')
-			client.disconnect()
-		}
+	async handleConnection(client: AuthenticatedSocket) {
+		await this.authSocketService.attachUserToSocket(client)
+		const userId = client?.user?.id
+		if (!userId) return
+		const chats = await this.chatService.getUserDirectChats(userId)
+		chats.forEach((chat) => {
+			client.join(chat.id)
+		})
+		this.logger.debug(`Client connected: ${client.id}`)
 	}
 
 	handleDisconnect(client: Socket) {
 		this.logger.debug(`Client disconnected: ${client.id}`)
 	}
 
-	@SubscribeMessage('sendMessage')
-	async handleSendMessage(
-		@CurrentUser('id') id: string,
-		@MessageBody() dto: any,
+	@SubscribeMessage(ChatClientEvent.SEND_MESSAGE)
+	@UsePipes(new ValidationPipe())
+	@UseFilters(WsExceptionFilter)
+	async onSendMessage(
+		@WSCurrentUser('id') userId: string,
+		@MessageBody() dto: SendMessageDto,
 	) {
-		this.server.emit('newMessage', dto, `User id - ${id}`)
+		const message = await this.chatService.sendMessage(userId, dto)
+		this.server.to(message.chatId).emit(ChatServerEvent.NEW_MESSAGE, message)
+		return message
+	}
+
+	@SubscribeMessage(ChatClientEvent.GET_MESSAGES)
+	@UsePipes(new ValidationPipe())
+	async onGetMessages(
+		@WSCurrentUser('id') userId: string,
+		@MessageBody() dto: GetMessagesDto,
+	) {
+		return this.chatService.getMessages(userId, dto.chatId)
+	}
+
+	@SubscribeMessage(ChatClientEvent.MARK_READ)
+	@UsePipes(new ValidationPipe())
+	async onMarkRead(
+		@WSCurrentUser('id') userId: string,
+		@MessageBody() dto: MarkReadDto,
+	) {
+		await this.chatService.markAsRead(userId, dto.chatId)
+		this.server
+			.to(dto.chatId)
+			.emit(ChatServerEvent.READ, { chatId: dto.chatId, userId })
+	}
+
+	@SubscribeMessage(ChatClientEvent.TYPING)
+	@UsePipes(new ValidationPipe())
+	async onTyping(
+		@WSCurrentUser('id') userId: string,
+		@MessageBody() dto: UserTypingDto,
+	) {
+		this.server
+			.to(dto.chatId)
+			.emit(ChatServerEvent.USER_TYPING, { userId, typing: dto.isTyping })
+	}
+
+	@SubscribeMessage(ChatClientEvent.DELETE_MESSAGE)
+	@UsePipes(new ValidationPipe())
+	async onDeleteMessage(
+		@WSCurrentUser('id') userId: string,
+		@MessageBody() dto: DeleteMessageDto,
+	) {
+		const message = await this.chatService.deleteMessage(userId, dto)
+		this.server
+			.to(dto.chatId)
+			.emit(ChatServerEvent.MESSAGE_DELETED, { messageId: dto.messageId })
+	}
+
+	@SubscribeMessage(ChatClientEvent.EDIT_MESSAGE)
+	@UsePipes(new ValidationPipe())
+	async onEditMessage(
+		@WSCurrentUser('id') userId: string,
+		@MessageBody() dto: MessageEditDto,
+	) {
+		const message = await this.chatService.editMessage(userId, dto)
+		this.server.to(dto.chatId).emit(ChatServerEvent.MESSAGE_EDITED, message)
 	}
 }
