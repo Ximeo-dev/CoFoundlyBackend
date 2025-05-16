@@ -117,7 +117,7 @@ export class ChatService {
 				participants: { every: { id: { in: [userId, dto.recipientId] } } },
 			},
 		})
-
+		const isNewChat = !chat
 		if (!chat) {
 			chat = await this.prisma.chat.create({
 				data: {
@@ -127,13 +127,15 @@ export class ChatService {
 			})
 		}
 
-		return this.prisma.message.create({
+		const message = await this.prisma.message.create({
 			data: {
 				chatId: chat.id,
 				senderId: userId,
 				content: dto.content,
 			},
 		})
+
+		return { message, isNewChat }
 	}
 
 	async getMessages(userId: string, chatId: string, dto: GetMessagesDto) {
