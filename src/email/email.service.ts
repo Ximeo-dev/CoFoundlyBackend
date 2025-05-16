@@ -17,7 +17,6 @@ import { EmailAlreadyConfirmedException } from 'src/exceptions/EmailAlreadyConfi
 import { RedisService } from 'src/redis/redis.service'
 import { TwoFactorAction } from 'src/two-factor/types/two-factor.types'
 import { ChangeEmailDto } from 'src/user/dto/user.dto'
-import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
 import { getEnvVar } from 'src/utils/env'
 import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
@@ -33,7 +32,6 @@ export class EmailService {
 
 	constructor(
 		private readonly configService: ConfigService,
-		private readonly jwt: JwtService,
 		private readonly userService: UserService,
 		private readonly redis: RedisService,
 	) {
