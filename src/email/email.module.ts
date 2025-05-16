@@ -7,15 +7,7 @@ import { EmailController } from './email.controller'
 import { EmailService } from './email.service'
 
 @Module({
-	imports: [
-		forwardRef(() => UserModule),
-		ConfigModule,
-		JwtModule.registerAsync({
-			imports: [ConfigModule],
-			inject: [ConfigService],
-			useFactory: getJwtConfig,
-		}),
-	],
+	imports: [forwardRef(() => UserModule), ConfigModule],
 	controllers: [EmailController],
 	providers: [EmailService],
 	exports: [EmailService],

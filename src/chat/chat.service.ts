@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common'
+import {
+	BadRequestException,
+	ForbiddenException,
+	Injectable,
+} from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 import {
 	DeleteMessageDto,
@@ -69,6 +73,9 @@ export class ChatService {
 	}
 
 	async sendMessage(userId: string, dto: SendMessageDto) {
+		if (userId === dto.recipientId)
+			throw new BadRequestException('You cannot message yourself')
+
 		let chat = await this.prisma.chat.findFirst({
 			where: {
 				type: 'DIRECT',
