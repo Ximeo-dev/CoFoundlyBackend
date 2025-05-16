@@ -25,11 +25,6 @@ import { parseBool } from 'src/utils/parse-bool'
 import { safeCompare } from 'src/utils/safe-compare'
 import * as zxcvbn from 'zxcvbn'
 
-interface TokenPayload {
-	id: string
-	email: string
-}
-
 @Injectable()
 export class EmailService {
 	private transporter: nodemailer.Transporter
@@ -51,223 +46,123 @@ export class EmailService {
 				user: this.emailUser,
 				pass: configService.getOrThrow<string>('EMAIL_PASS'),
 			},
-			// logger: true,
 		} as SMTPTransport.Options)
 	}
 
 	async sendMail(to: string, subject: string, html: string) {
-		try {
-			await this.transporter.sendMail({
-				from: `"${this.emailUsername}" ${this.emailUser}`,
-				to,
-				subject,
-				html,
-			})
-		} catch (err) {
-			console.error('Error sending email:', err)
-		}
+		await this.transporter.sendMail({
+			from: `"${this.emailUsername}" <${this.emailUser}>`,
+			to,
+			subject,
+			html,
+		})
 	}
 
 	private generateToken(): string {
 		return randomBytes(32).toString('hex')
 	}
 
-	private actionEmailKey(userId: string, action: TwoFactorAction) {
+	private actionEmailKey(userId: string, action: string) {
 		return `email:${action}:${userId}`
 	}
 
 	async issueToken(userId: string, action: TwoFactorAction) {
-		const user = await this.userService.getByIdWithSecuritySettings(userId)
-
-		if (!hasSecuritySettings(user))
-			throw new NotFoundException('User not found')
+		const user = await this.userService.getById(userId)
+		if (!user) throw new NotFoundException('User not found')
 
 		const key = this.actionEmailKey(userId, action)
-		const ttl = TTL_BY_ACTION[action] ?? 60
+		const ttl = TTL_BY_ACTION[action] || 600
 		const token = this.generateToken()
 
 		await this.redis.set(key, token, ttl)
-
 		return token
 	}
 
-	async getPayloadFromToken(token: string) {
-		try {
-			const payload: TokenPayload = await this.jwt.verifyAsync(token)
-
-			return payload
-		} catch (error) {
-			if (error.name === 'TokenExpiredError') {
-				throw new BadRequestException('JWT Token Expired')
-			} else {
-				throw new BadRequestException('Invalid token')
-			}
-		}
-	}
-
-	async handleEmailConfirmationToken(token: string) {
-		const payload = await this.getPayloadFromToken(token)
-		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
-
-		if (!user || !user.securitySettings)
-			throw new BadRequestException('Пользователь не найден')
-
-		const { securitySettings } = user
-
-		if (!safeCompare(securitySettings.emailConfirmationToken, token)) {
-			await this.sendEmailConfirmation(payload.id)
-			throw new BadRequestException(
-				'Срок действия ссылки подтверждения истёк. Запрос на подтверждение был отправлен заново',
-			)
-		}
-
-		return payload
-	}
-
-	async handleResetPasswordConfirmationToken(
+	async verifyToken(
+		userId: string,
+		action: TwoFactorAction,
 		token: string,
-		payload: TokenPayload,
-	) {
-		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
-
-		if (!user || !user.securitySettings)
-			throw new BadRequestException('Пользователь не найден')
-
-		const { securitySettings } = user
-
-		if (!safeCompare(securitySettings.resetPasswordToken, token)) {
-			throw new BadRequestException(
-				'Срок действия ссылки подтверждения истёк. Запросите сброс пароля заново',
-			)
+	): Promise<boolean> {
+		const key = this.actionEmailKey(userId, action)
+		const storedToken = await this.redis.get(key)
+		if (!storedToken) return false
+		const isValid = safeCompare(storedToken, token)
+		if (isValid) {
+			await this.redis.del(key)
 		}
-	}
-
-	async handleChangeEmailConfirmationToken(token: string) {
-		const payload = await this.getPayloadFromToken(token)
-		const user = await this.userService.getByIdWithSecuritySettings(payload.id)
-
-		if (!user || !user.securitySettings)
-			throw new BadRequestException('Пользователь не найден')
-
-		const { securitySettings } = user
-
-		if (!safeCompare(securitySettings.changeEmailToken, token)) {
-			throw new BadRequestException(
-				'Срок действия ссылки подтверждения истёк. Запросите смену почты заново',
-			)
-		}
-
-		return payload
-	}
-
-	async issueConfirmationToken(userId: string, email: string) {
-		const data = { id: userId, email }
-
-		return this.jwt.sign(data, {
-			expiresIn: '10m',
-		})
+		return isValid
 	}
 
 	async sendEmailConfirmation(userId: string) {
 		const user = await this.userService.getByIdWithSecuritySettings(userId)
-
 		if (!user || !user.securitySettings) return
 
-		const { securitySettings } = user
-
-		if (securitySettings.isEmailConfirmed) {
+		if (user.securitySettings.isEmailConfirmed) {
 			throw new EmailAlreadyConfirmedException()
 		}
 
-		const token = await this.issueConfirmationToken(user.id, user.email)
+		const token = await this.issueToken(userId, TwoFactorAction.CONFIRM_EMAIL)
+		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-email?userId=${userId}&token=${token}`
 
-		await this.userService.setEmailConfirmationToken(user.id, token)
-
-		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-email?token=${token}`
-
-		const context = {
-			confirmationUrl,
-		}
-
+		const context = { confirmationUrl }
 		const template = await getHtmlTemplate(
 			getEnvVar('EMAIL_CONFIRMATION_MESSAGE_FILE'),
 		)
-
 		if (!template)
-			throw new InternalServerErrorException(
-				'Произошла ошибка во время отправки подтверждения',
-			)
+			throw new InternalServerErrorException('Error loading email template')
 
-		this.transporter
-			.sendMail({
-				from: `"CoFoundly" <${getEnvVar('EMAIL_USER')}>`,
-				to: user.email,
-				subject: 'Подтверждение эл. почты',
-				html: compile(template)(context),
-			})
-			.catch((e) => console.log(e))
+		this.sendMail(
+			user.email,
+			'Подтверждение эл. почты',
+			compile(template)(context),
+		)
 	}
 
-	async confirmEmail(userId: string) {
-		const user = await this.userService.getByIdWithSecuritySettings(userId)
-
-		if (!user || !user.securitySettings) {
-			throw new NotFoundException('Пользователь не найден')
-		}
-
-		const { securitySettings } = user
-
-		if (securitySettings.isEmailConfirmed) {
-			throw new EmailAlreadyConfirmedException()
-		}
-
-		await this.userService.setConfirmedEmailStatus(user.id, true)
+	async confirmEmailWithToken(userId: string, token: string) {
+		const isValid = await this.verifyToken(
+			userId,
+			TwoFactorAction.CONFIRM_EMAIL,
+			token,
+		)
+		if (!isValid) throw new BadRequestException('Invalid or expired token')
+		await this.userService.setConfirmedEmailStatus(userId, true)
 	}
 
 	async sendEmailResetPassword(email: string) {
 		const user = await this.userService.getByEmail(email)
-
 		if (!user) throw new BadRequestException('Пользователь не найден')
 
-		const token = await this.issueConfirmationToken(user.id, user.email)
+		const token = await this.issueToken(user.id, TwoFactorAction.RESET_PASSWORD)
+		const confirmationUrl = `http://${getEnvVar('FRONTEND_URL')}/reset-password?userId=${user.id}&token=${token}`
 
-		await this.userService.setResetPasswordToken(user.id, token)
-
-		const confirmationUrl = `http://${getEnvVar('FRONTEND_URL')}/reset-password/confirm?token=${token}`
-
-		const context = {
-			email: user.email,
-			confirmationUrl,
-		}
-
+		const context = { email: user.email, confirmationUrl }
 		const template = await getHtmlTemplate(
 			getEnvVar('RESET_PASSWORD_CONFIRMATION_MESSAGE_FILE'),
 		)
-
 		if (!template)
-			throw new InternalServerErrorException(
-				'Произошла ошибка во время отправки подтверждения',
-			)
+			throw new InternalServerErrorException('Error loading email template')
 
-		this.transporter
-			.sendMail({
-				from: `"CoFoundly" <${getEnvVar('EMAIL_USER')}>`,
-				to: user.email,
-				subject: 'Подтверждение восстановления пароля',
-				html: compile(template)(context),
-			})
-			.catch((e) => console.log(e))
+		this.sendMail(
+			user.email,
+			'Подтверждение восстановления пароля',
+			compile(template)(context),
+		)
+	}
+
+	async verifyResetPasswordToken(userId: string, token: string) {
+		const isValid = await this.verifyToken(
+			userId,
+			TwoFactorAction.RESET_PASSWORD,
+			token,
+		)
+		if (!isValid) throw new BadRequestException('Invalid or expired token')
 	}
 
 	async confirmResetPassword(userId: string, dto: ResetPasswordConfirmDto) {
 		const user = await this.userService.getById(userId)
-
-		if (!user) {
-			throw new NotFoundException('Пользователь не найден')
-		}
+		if (!user) throw new NotFoundException('Пользователь не найден')
 
 		const result = zxcvbn(dto.password)
-
 		if (result.score <= 1)
 			throw new BadRequestException('Пароль слишком простой')
 
@@ -277,61 +172,51 @@ export class EmailService {
 
 	async sendChangeEmailConfirmation(userId: string, dto: ChangeEmailDto) {
 		const user = await this.userService.getByIdWithSecuritySettings(userId)
-
 		if (!user || !user.securitySettings)
 			throw new BadRequestException('Пользователь не найден')
 
-		const { securitySettings } = user
-
 		const isMatch = await verify(
-			securitySettings.passwordHash,
+			user.securitySettings.passwordHash,
 			dto.currentPassword,
 		)
-
 		if (!isMatch) throw new BadRequestException('Неверный пароль')
 
 		if (user.email === dto.newEmail)
 			throw new BadRequestException('Аккаунт уже привязан к этому адресу почты')
 
-		const token = await this.issueConfirmationToken(user.id, dto.newEmail)
-
-		await this.userService.setChangeEmailToken(user.id, token)
-
-		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-change-email?token=${token}`
+		const token = await this.issueToken(userId, TwoFactorAction.CHANGE_EMAIL)
+		const confirmationUrl = `http://${getEnvVar('API_URL')}/confirm-change-email?userId=${userId}&token=${token}&newEmail=${encodeURIComponent(dto.newEmail)}`
 
 		const context = {
 			oldEmail: user.email,
 			newEmail: dto.newEmail,
 			confirmationUrl,
 		}
-
 		const template = await getHtmlTemplate(
 			getEnvVar('CHANGE_EMAIL_CONFIRMATION_MESSAGE_FILE'),
 		)
-
 		if (!template)
-			throw new InternalServerErrorException(
-				'Произошла ошибка во время отправки подтверждения',
-			)
+			throw new InternalServerErrorException('Error loading email template')
 
-		this.transporter
-			.sendMail({
-				from: `"CoFoundly" <${getEnvVar('EMAIL_USER')}>`,
-				to: dto.newEmail,
-				subject: 'Подтверждение смены эл. почты',
-				html: compile(template)(context),
-			})
-			.catch((e) => console.log(e))
+		this.sendMail(
+			dto.newEmail,
+			'Подтверждение смены эл. почты',
+			compile(template)(context),
+		)
 	}
 
-	async confirmChangeEmail(userId: string, newEmail: string) {
-		const user = await this.userService.getById(userId)
-
-		if (!user) {
-			throw new NotFoundException('Пользователь не найден')
-		}
-
-		await this.userService.changeEmail(user.id, newEmail)
-		await this.userService.setConfirmedEmailStatus(user.id, true)
+	async confirmChangeEmailWithToken(
+		userId: string,
+		token: string,
+		newEmail: string,
+	) {
+		const isValid = await this.verifyToken(
+			userId,
+			TwoFactorAction.CHANGE_EMAIL,
+			token,
+		)
+		if (!isValid) throw new BadRequestException('Invalid or expired token')
+		await this.userService.changeEmail(userId, newEmail)
+		await this.userService.setConfirmedEmailStatus(userId, true)
 	}
 }

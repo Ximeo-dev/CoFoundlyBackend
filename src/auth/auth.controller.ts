@@ -15,7 +15,11 @@ import { EmailService } from 'src/email/email.service'
 import { UserService } from 'src/user/user.service'
 import { AuthService } from './auth.service'
 import { LoginDto } from './dto/login.dto'
-import { EmailAvailableDto, RegisterDto, UsernameAvailableDto } from './dto/register.dto'
+import {
+	EmailAvailableDto,
+	RegisterDto,
+	UsernameAvailableDto,
+} from './dto/register.dto'
 import {
 	ResetPasswordConfirmDto,
 	ResetPasswordRequestDto,
@@ -123,19 +127,19 @@ export class AuthController {
 	@Post('reset-password')
 	async resetPasswordRequest(@Body() dto: ResetPasswordRequestDto) {
 		await this.emailService.sendEmailResetPassword(dto.email)
-
 		return { message: 'Confirmation email sent' }
 	}
 
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('reset-password/confirm')
-	async confirmEmail(
+	async confirmResetPassword(
+		@Query('userId') userId: string,
 		@Query('token') token: string,
 		@Body() dto: ResetPasswordConfirmDto,
 	) {
-		const payload = await this.emailService.getPayloadFromToken(token)
-		await this.emailService.handleResetPasswordConfirmationToken(token, payload)
-		return this.emailService.confirmResetPassword(payload.id, dto)
+		await this.emailService.verifyResetPasswordToken(userId, token)
+		await this.emailService.confirmResetPassword(userId, dto)
+		return { message: 'Password reset successfully' }
 	}
 }

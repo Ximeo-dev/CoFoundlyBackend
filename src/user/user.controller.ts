@@ -7,11 +7,11 @@ import {
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
-import { UserService } from './user.service'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
-import { ChangeEmailDto, UpdateUserDto } from './dto/user.dto'
 import { EmailService } from 'src/email/email.service'
+import { ChangeEmailDto, UpdateUserDto } from './dto/user.dto'
+import { UserService } from './user.service'
 
 @Controller('user')
 export class UserController {
@@ -46,10 +46,7 @@ export class UserController {
 	@UsePipes(new ValidationPipe())
 	@Patch()
 	@Auth()
-	async updateUser(
-		@CurrentUser('id') id: string,
-		@Body() dto: UpdateUserDto,
-	) {
+	async updateUser(@CurrentUser('id') id: string, @Body() dto: UpdateUserDto) {
 		return this.userService.updateUserData(id, dto)
 	}
 }

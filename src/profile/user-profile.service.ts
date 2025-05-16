@@ -12,30 +12,54 @@ import {
 	UserProfileResponseDto,
 } from './dto/user-profile.dto'
 import { RelationService } from './relation.service'
+import { RedisService } from 'src/redis/redis.service'
+import { UserProfileFullExtended } from './types/profile.types'
+import { CACHE_TTL } from 'src/constants/constants'
 
 @Injectable()
 export class UserProfileService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly relationService: RelationService,
+		private readonly redis: RedisService,
 	) {}
+
+	private getCacheKey(userId: string) {
+		return `user:profile:${userId}`
+	}
 
 	async getUserProfile(userId: string) {
 		try {
-			const profile = await this.prisma.userProfile.findUnique({
-				where: { userId },
-				include: {
-					user: { select: { username: true, displayUsername: true } },
-					job: { select: { name: true } },
-					skills: { select: { name: true } },
-					languages: { select: { name: true } },
-					industries: { select: { name: true } },
-				},
-			})
+			const cachedProfile = await this.redis.getObject<UserProfileFullExtended>(
+				this.getCacheKey(userId),
+			)
 
-			if (!profile) {
-				throw new NotFoundException(
-					`Profile with id ${userId} does not exist`,
+			let profile: UserProfileFullExtended | null
+
+			if (cachedProfile) {
+				profile = cachedProfile
+			} else {
+				profile = await this.prisma.userProfile.findUnique({
+					where: { userId },
+					include: {
+						user: { select: { username: true, displayUsername: true } },
+						job: { select: { name: true } },
+						skills: { select: { name: true } },
+						languages: { select: { name: true } },
+						industries: { select: { name: true } },
+					},
+				})
+
+				if (!profile) {
+					throw new NotFoundException(
+						`Profile with id ${userId} does not exist`,
+					)
+				}
+
+				await this.redis.setObject<UserProfileFullExtended>(
+					this.getCacheKey(userId),
+					profile,
+					CACHE_TTL.USER_PROFILE,
 				)
 			}
 
@@ -53,7 +77,50 @@ export class UserProfileService {
 		return this.prepareToResponse(profile, true)
 	}
 
-	public prepareToResponse(profile: any, excludeBirthDate: boolean = true) {
+	async getForeignUsersProfiles(userIds: string[]) {
+		const uniqueIds = Array.from(new Set(userIds))
+		const cacheKeys = uniqueIds.map((id) => this.getCacheKey(id))
+
+		const cachedProfiles = await this.redis.mget(cacheKeys)
+		const profilesMap = new Map<string, UserProfileFullExtended>()
+
+		const missingIds: string[] = []
+		cachedProfiles.forEach((profile, index) => {
+			if (profile) {
+				profilesMap.set(uniqueIds[index], JSON.parse(profile))
+			} else {
+				missingIds.push(uniqueIds[index])
+			}
+		})
+
+		if (missingIds.length > 0) {
+			const profilesFromDB = await this.prisma.userProfile.findMany({
+				where: { userId: { in: missingIds } },
+				include: {
+					user: { select: { username: true, displayUsername: true } },
+					job: { select: { name: true } },
+					skills: { select: { name: true } },
+					languages: { select: { name: true } },
+					industries: { select: { name: true } },
+				},
+			})
+
+			profilesFromDB.forEach((profile) => {
+				profilesMap.set(profile.userId, profile)
+			})
+		}
+
+		return userIds.map((id) => {
+			const profile = profilesMap.get(id)
+			if (profile) return this.prepareToResponse(profile)
+			return undefined
+		})
+	}
+
+	public prepareToResponse(
+		profile: any,
+		excludeBirthDate: boolean = true,
+	) {
 		const age = profile.birthDate ? calculateAge(profile.birthDate) : null
 
 		const responseData = excludeBirthDate
@@ -113,12 +180,23 @@ export class UserProfileService {
 					...industriesData,
 				},
 				include: {
+					user: {
+						select: {
+							username: true,
+							displayUsername: true,
+						},
+					},
 					job: { select: { name: true } },
 					skills: { select: { name: true } },
 					languages: { select: { name: true } },
 					industries: { select: { name: true } },
 				},
 			})
+			await this.redis.setObject<UserProfileFullExtended>(
+				this.getCacheKey(userId),
+				profile,
+				CACHE_TTL.USER_PROFILE,
+			)
 
 			return this.prepareToResponse(profile, false)
 		} catch (error) {
@@ -184,12 +262,23 @@ export class UserProfileService {
 					...industriesUpdate,
 				},
 				include: {
+					user: {
+						select: {
+							username: true,
+							displayUsername: true,
+						},
+					},
 					job: { select: { name: true } },
 					skills: { select: { name: true } },
 					languages: { select: { name: true } },
 					industries: { select: { name: true } },
 				},
 			})
+			await this.redis.setObject<UserProfileFullExtended>(
+				this.getCacheKey(userId),
+				updatedProfile,
+				CACHE_TTL.USER_PROFILE,
+			)
 
 			return this.prepareToResponse(updatedProfile, false)
 		} catch (error) {
@@ -205,12 +294,11 @@ export class UserProfileService {
 			await this.prisma.userProfile.delete({
 				where: { userId },
 			})
+			await this.redis.del(this.getCacheKey(userId))
 			return { userId, deleted: true }
 		} catch (error) {
 			if (error.code === 'P2025') {
-				throw new NotFoundException(
-					`Profile with id ${userId} does not exist`,
-				)
+				throw new NotFoundException(`Profile with id ${userId} does not exist`)
 			}
 			throw error
 		}
@@ -224,12 +312,11 @@ export class UserProfileService {
 					hasAvatar: status,
 				},
 			})
+			await this.redis.del(this.getCacheKey(userId))
 			return { userId, status }
 		} catch (error) {
 			if (error.code === 'P2025') {
-				throw new NotFoundException(
-					`Profile with id ${userId} does not exist`,
-				)
+				throw new NotFoundException(`Profile with id ${userId} does not exist`)
 			}
 			throw error
 		}
