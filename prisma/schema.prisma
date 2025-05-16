@@ -266,7 +266,7 @@ model Message {
   isEdited Boolean @default(false)
   readReceipt ReadReceipt?
 
-  @@index([senderId, chatId])
+  @@index([senderId, chatId, sentAt])
 }
 
 model ReadReceipt {

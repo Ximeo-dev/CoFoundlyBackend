@@ -8,7 +8,6 @@ import {
 } from './dto/chat.dto'
 import { ChatResponseDto } from './dto/response.dto'
 import { UserProfileService } from 'src/profile/user-profile.service'
-import { UserProfileResponseDto } from 'src/profile/dto/user-profile.dto'
 import { ChatParticipant } from './types/chat.types'
 
 @Injectable()
@@ -17,44 +16,6 @@ export class ChatService {
 		private readonly prisma: PrismaService,
 		private readonly userProfileService: UserProfileService,
 	) {}
-
-	async createDirectChat(senderId: string, recipientId: string) {
-		const participants = [senderId, recipientId]
-
-		const chats = await this.prisma.chat.findMany({
-			where: {
-				type: 'DIRECT',
-				participants: {
-					every: {
-						id: { in: participants },
-					},
-				},
-			},
-			include: {
-				participants: true,
-			},
-		})
-
-		const existingChat = chats.find((chat) => chat.participants.length === 2)
-
-		if (existingChat) {
-			return existingChat
-		}
-
-		const newChat = await this.prisma.chat.create({
-			data: {
-				type: 'DIRECT',
-				participants: {
-					connect: participants.map((id) => ({ id })),
-				},
-			},
-			include: {
-				participants: true,
-			},
-		})
-
-		return newChat
-	}
 
 	async getUserDirectChats(userId: string) {
 		const chats = await this.prisma.chat.findMany({
@@ -73,39 +34,36 @@ export class ChatService {
 			},
 		})
 
-		const response: ChatResponseDto[] = await Promise.all(
-			chats.map(async (chat) => {
-				const participants: ChatParticipant[] = await Promise.all(
-					chat.participants
-						.filter((p) => p.id !== userId)
-						.map(async (participant) => {
-							try {
-								const profile =
-									await this.userProfileService.getForeignUserProfile(
-										participant.id,
-									)
-								return {
-									userId: participant.id,
-									displayUsername: participant.displayUsername,
-									profile,
-								}
-							} catch (error) {
-								return {
-									userId: participant.id,
-									displayUsername: participant.displayUsername,
-								}
-							}
-						}),
-				)
-
-				return {
-					id: chat.id,
-					type: chat.type,
-					participants,
-					messages: chat.messages,
-				}
-			}),
+		const participantIds = Array.from(
+			new Set(
+				chats.flatMap((chat) =>
+					chat.participants.filter((p) => p.id !== userId).map((p) => p.id),
+				),
+			),
 		)
+
+		const profiles =
+			await this.userProfileService.getForeignUsersProfiles(participantIds)
+		const profileMap = new Map(
+			participantIds.map((id, index) => [id, profiles[index]]),
+		)
+
+		const response: ChatResponseDto[] = chats.map((chat) => {
+			const participants: ChatParticipant[] = chat.participants
+				.filter((p) => p.id !== userId)
+				.map((participant) => ({
+					userId: participant.id,
+					displayUsername: participant.displayUsername,
+					profile: profileMap.get(participant.id),
+				}))
+
+			return {
+				id: chat.id,
+				type: chat.type,
+				participants,
+				messages: chat.messages,
+			}
+		})
 
 		return response
 	}
