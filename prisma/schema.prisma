@@ -74,6 +74,7 @@ model Project {
   name        String
   description String
   hasAvatar   Boolean       @default(false)
+  isPublished Boolean       @default(false)
   ownerId     String        @db.Uuid
   owner       User @relation("ProjectOwner", fields: [ownerId], references: [id])
   roles ProjectRole[]       @relation("ProjectRoles")

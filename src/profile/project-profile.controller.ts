@@ -32,6 +32,12 @@ export class ProjectProfileController {
 		return this.projectProfileService.getProjectById(id)
 	}
 
+	@Get(':projectId/members')
+	@Auth()
+	async getProjectMembers(@Param('projectId', ParseUUIDPipe) id: string) {
+		return this.projectProfileService.getProjectMembers(id)
+	}
+
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@Post()
