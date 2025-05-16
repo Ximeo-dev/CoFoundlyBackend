@@ -1,4 +1,12 @@
-import { Controller, Get, HttpCode, Post, Query, Res } from '@nestjs/common'
+import {
+	Controller,
+	Get,
+	HttpCode,
+	ParseUUIDPipe,
+	Post,
+	Query,
+	Res,
+} from '@nestjs/common'
 import { Response } from 'express'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
@@ -12,32 +20,54 @@ export class EmailController {
 	@HttpCode(200)
 	@Get('confirm-email')
 	async confirmEmail(
+		@Query('userId', ParseUUIDPipe) userId: string,
 		@Query('token') token: string,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		const payload = await this.emailService.handleEmailConfirmationToken(token)
-		await this.emailService.confirmEmail(payload.id)
+		await this.emailService.confirmEmailWithToken(userId, token)
 		return res.redirect(`http://${getEnvVar('FRONTEND_URL')}/profile`)
 	}
+
+	// @HttpCode(200)
+	// @Get('confirm-email')
+	// async confirmEmail(
+	// 	@Query('token') token: string,
+	// 	@Res({ passthrough: true }) res: Response,
+	// ) {
+	// 	const payload = await this.emailService.handleEmailConfirmationToken(token)
+	// 	await this.emailService.confirmEmail(payload.id)
+	// 	return res.redirect(`http://${getEnvVar('FRONTEND_URL')}/profile`)
+	// }
 
 	@HttpCode(200)
 	@Get('confirm-change-email')
 	async confirmChangeEmail(
+		@Query('userId', ParseUUIDPipe) userId: string,
 		@Query('token') token: string,
+		@Query('newEmail') newEmail: string,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		const payload =
-			await this.emailService.handleChangeEmailConfirmationToken(token)
-		await this.emailService.confirmChangeEmail(payload.id, payload.email)
-		return res.redirect(`http://${getEnvVar('')}/profile`)
+		await this.emailService.confirmChangeEmailWithToken(userId, token, newEmail)
+		return res.redirect(`http://${getEnvVar('FRONTEND_URL')}/profile`)
 	}
+
+	// @HttpCode(200)
+	// @Get('confirm-change-email')
+	// async confirmChangeEmail(
+	// 	@Query('token') token: string,
+	// 	@Res({ passthrough: true }) res: Response,
+	// ) {
+	// 	const payload =
+	// 		await this.emailService.handleChangeEmailConfirmationToken(token)
+	// 	await this.emailService.confirmChangeEmail(payload.id, payload.email)
+	// 	return res.redirect(`http://${getEnvVar('')}/profile`)
+	// }
 
 	@HttpCode(200)
 	@Post('send-confirmation')
 	@Auth()
 	async sendConfirmation(@CurrentUser('id') id: string) {
 		await this.emailService.sendEmailConfirmation(id)
-
 		return { message: 'Письмо с подтверждением отправлено' }
 	}
 }

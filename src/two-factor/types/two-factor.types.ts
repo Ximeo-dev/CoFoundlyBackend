@@ -2,7 +2,8 @@ export enum TwoFactorAction {
 	BIND = 'bind',
 	UNBIND = 'unbind',
 	CHANGE_EMAIL = 'change-email',
-	CHANGE_PASSWORD = 'change-password',
+	RESET_PASSWORD = 'reset-password',
+	CONFIRM_EMAIL = 'confirm-email'
 }
 
 export enum TwoFactorHandleResult {
