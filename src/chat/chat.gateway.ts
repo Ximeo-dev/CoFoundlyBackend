@@ -1,6 +1,5 @@
 import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common'
 import {
-	ConnectedSocket,
 	MessageBody,
 	OnGatewayConnection,
 	OnGatewayDisconnect,
@@ -9,27 +8,24 @@ import {
 	WebSocketServer,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { ChatService } from './chat.service'
-import { ChatClientEvent, ChatServerEvent } from './types/chat-events'
-import { AuthenticatedSocket } from './types/socket.types'
 import { WSCurrentUser } from 'src/auth/decorators/ws-user.decorator'
 import { AuthSocketService } from 'src/auth/socket/auth-socket.service'
+import { WsExceptionFilter } from 'src/exceptions/WsExceptionFilter'
+import { ChatService } from './chat.service'
 import {
 	DeleteMessageDto,
-	GetMessagesDto,
 	MarkReadDto,
 	MessageEditDto,
 	SendMessageDto,
 	UserTypingDto,
-} from './dto/message.dto'
-import { WsExceptionFilter } from 'src/exceptions/WsExceptionFilter'
+} from './dto/chat.dto'
+import { ChatClientEvent, ChatServerEvent } from './types/chat-events'
+import { AuthenticatedSocket } from './types/socket.types'
 
 @WebSocketGateway({
 	namespace: '/chat',
-	cors: {
-		origin: ['http://localhost:3000', 'https://cofoundly.infinitum.su'],
-	},
 })
+@UseFilters(WsExceptionFilter)
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	private logger: Logger = new Logger('ChatGateway')
 	@WebSocketServer() server: Server
@@ -56,7 +52,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@SubscribeMessage(ChatClientEvent.SEND_MESSAGE)
 	@UsePipes(new ValidationPipe())
-	@UseFilters(WsExceptionFilter)
 	async onSendMessage(
 		@WSCurrentUser('id') userId: string,
 		@MessageBody() dto: SendMessageDto,
@@ -64,15 +59,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const message = await this.chatService.sendMessage(userId, dto)
 		this.server.to(message.chatId).emit(ChatServerEvent.NEW_MESSAGE, message)
 		return message
-	}
-
-	@SubscribeMessage(ChatClientEvent.GET_MESSAGES)
-	@UsePipes(new ValidationPipe())
-	async onGetMessages(
-		@WSCurrentUser('id') userId: string,
-		@MessageBody() dto: GetMessagesDto,
-	) {
-		return this.chatService.getMessages(userId, dto.chatId)
 	}
 
 	@SubscribeMessage(ChatClientEvent.MARK_READ)

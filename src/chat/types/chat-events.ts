@@ -1,12 +1,9 @@
 export enum ChatClientEvent {
 	SEND_MESSAGE = 'chat:send_message',
-	GET_MESSAGES = 'chat:get_messages',
 	MARK_READ = 'chat:mark_read',
 	TYPING = 'chat:typing',
 	DELETE_MESSAGE = 'chat:delete_message',
 	EDIT_MESSAGE = 'chat:edit_message',
-	JOIN_CHAT = 'chat:join',
-	LEAVE_CHAT = 'chat:leave',
 }
 
 export enum ChatServerEvent {
