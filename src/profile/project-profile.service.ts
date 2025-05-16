@@ -73,7 +73,10 @@ export class ProjectProfileService {
 
 	async getProjectById(projectId: string) {
 		const project = await this.prisma.project.findUnique({
-			where: { id: projectId },
+			where: {
+				id: projectId,
+				isPublished: true,
+			},
 			include: {
 				projectRequirement: {
 					select: {
@@ -104,6 +107,22 @@ export class ProjectProfileService {
 		return plainToClass(ProjectResponseDto, responseData, {
 			excludeExtraneousValues: true,
 		})
+	}
+
+	async getProjectMembers(projectId: string) {
+		return this.prisma.projectMember.findMany({
+			where: {
+				projectId,
+			},
+		})
+	}
+
+	async addMemberToProject(projectId: string, userId: string) {
+		const userProfile = await this.prisma.userProfile.findUnique({
+			where: { userId },
+		})
+
+		if (!userProfile) throw new BadRequestException('User must have profile for join project')
 	}
 
 	async createProject(userId: string, dto: CreateProjectDto) {

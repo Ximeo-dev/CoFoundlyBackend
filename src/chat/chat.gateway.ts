@@ -25,6 +25,7 @@ import { AuthenticatedSocket } from './types/socket.types'
 
 @WebSocketGateway({
 	namespace: '/chat',
+	origin: ['http://localhost:3000', 'https://cofoundly.infinitum.su'],
 })
 @UseFilters(WsExceptionFilter)
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -40,7 +41,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		await this.authSocketService.attachUserToSocket(client)
 		const userId = client?.user?.id
 		if (!userId) return
-    client.join(userId)
+		client.join(userId)
 		const chats = await this.chatService.getUserDirectChats(userId)
 		chats.forEach((chat) => {
 			client.join(chat.id)
@@ -69,8 +70,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				.in(dto.recipientId)
 				.fetchSockets()
 			recipientSockets.forEach((socket) => {
-        socket.join(message.chatId)
-      })
+				socket.join(message.chatId)
+			})
 		}
 		this.server.to(message.chatId).emit(ChatServerEvent.NEW_MESSAGE, message)
 		return message

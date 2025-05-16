@@ -60,6 +60,9 @@ export class ProjectResponseDto {
 	hasAvatar: boolean
 
 	@Expose()
+	isPublished: boolean
+
+	@Expose()
 	ownerId: string
 
 	@Expose()
