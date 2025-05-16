@@ -1,5 +1,6 @@
 import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common'
 import {
+	ConnectedSocket,
 	MessageBody,
 	OnGatewayConnection,
 	OnGatewayDisconnect,
@@ -39,6 +40,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		await this.authSocketService.attachUserToSocket(client)
 		const userId = client?.user?.id
 		if (!userId) return
+    client.join(userId)
 		const chats = await this.chatService.getUserDirectChats(userId)
 		chats.forEach((chat) => {
 			client.join(chat.id)
@@ -55,8 +57,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	async onSendMessage(
 		@WSCurrentUser('id') userId: string,
 		@MessageBody() dto: SendMessageDto,
+		@ConnectedSocket() client: AuthenticatedSocket,
 	) {
-		const message = await this.chatService.sendMessage(userId, dto)
+		const { message, isNewChat } = await this.chatService.sendMessage(
+			userId,
+			dto,
+		)
+		if (isNewChat) {
+			client.join(message.chatId)
+			const recipientSockets = await this.server
+				.in(dto.recipientId)
+				.fetchSockets()
+			recipientSockets.forEach((socket) => {
+        socket.join(message.chatId)
+      })
+		}
 		this.server.to(message.chatId).emit(ChatServerEvent.NEW_MESSAGE, message)
 		return message
 	}
