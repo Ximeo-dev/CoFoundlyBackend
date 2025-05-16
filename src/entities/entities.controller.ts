@@ -15,7 +15,7 @@ import { Auth } from 'src/auth/decorators/auth.decorator'
 import { Roles } from 'src/auth/decorators/roles.decorator'
 import { RolesGuard } from 'src/auth/guards/roles.guard'
 import { EntitiesService, EntityType } from './entities.service'
-import { EntityDto } from './dto/entities.dto'
+import { AutocompleteQueryParamsDto, EntityDto } from './dto/entities.dto'
 import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
 
 @Controller('entity')
@@ -23,16 +23,16 @@ export class EntitiesController {
 	constructor(private readonly entitiesService: EntitiesService) {}
 
 	@Get(':entity/autocomplete')
+	@UsePipes(new ValidationPipe())
 	@Auth()
 	async autocomplete(
-		@Query('q') query: string,
-		@Query('limit') limit: number,
+		@Query() dto: AutocompleteQueryParamsDto,
 		@Param('entity', new EnumValidationPipe(EntityType))
 		entity: EntityType,
 	) {
 		return this.entitiesService.findEntitiesForAutocomplete(
-			query,
-			limit,
+			dto.query,
+			dto.limit,
 			entity,
 		)
 	}

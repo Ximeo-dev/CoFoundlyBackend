@@ -64,8 +64,8 @@ export class EntitiesService {
 	}
 
 	async findEntitiesForAutocomplete(
-		query: string = '',
-		limit: number = 10,
+		query: string,
+		limit: number,
 		entity: EntityType,
 	) {
 		const trimmedQuery = query.trim().toLowerCase()

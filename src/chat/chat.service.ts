@@ -5,11 +5,18 @@ import {
 	GetMessagesDto,
 	MessageEditDto,
 	SendMessageDto,
-} from './dto/message.dto'
+} from './dto/chat.dto'
+import { ChatResponseDto } from './dto/response.dto'
+import { UserProfileService } from 'src/profile/user-profile.service'
+import { UserProfileResponseDto } from 'src/profile/dto/user-profile.dto'
+import { ChatParticipant } from './types/chat.types'
 
 @Injectable()
 export class ChatService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly userProfileService: UserProfileService,
+	) {}
 
 	async createDirectChat(senderId: string, recipientId: string) {
 		const participants = [senderId, recipientId]
@@ -50,12 +57,57 @@ export class ChatService {
 	}
 
 	async getUserDirectChats(userId: string) {
-		return this.prisma.chat.findMany({
+		const chats = await this.prisma.chat.findMany({
 			where: {
 				participants: { some: { id: userId } },
 				type: 'DIRECT',
 			},
+			include: {
+				participants: {
+					select: {
+						id: true,
+						displayUsername: true,
+					},
+				},
+				messages: { take: 1, orderBy: { sentAt: 'desc' } },
+			},
 		})
+
+		const response: ChatResponseDto[] = await Promise.all(
+			chats.map(async (chat) => {
+				const participants: ChatParticipant[] = await Promise.all(
+					chat.participants
+						.filter((p) => p.id !== userId)
+						.map(async (participant) => {
+							try {
+								const profile =
+									await this.userProfileService.getForeignUserProfile(
+										participant.id,
+									)
+								return {
+									userId: participant.id,
+									displayUsername: participant.displayUsername,
+									profile,
+								}
+							} catch (error) {
+								return {
+									userId: participant.id,
+									displayUsername: participant.displayUsername,
+								}
+							}
+						}),
+				)
+
+				return {
+					id: chat.id,
+					type: chat.type,
+					participants,
+					messages: chat.messages,
+				}
+			}),
+		)
+
+		return response
 	}
 
 	async sendMessage(userId: string, dto: SendMessageDto) {
@@ -84,12 +136,20 @@ export class ChatService {
 		})
 	}
 
-	async getMessages(userId: string, chatId: string) {
+	async getMessages(userId: string, chatId: string, dto: GetMessagesDto) {
+		const { page, limit } = dto
 		const chat = await this.prisma.chat.findFirst({
 			where: { id: chatId, participants: { some: { id: userId } } },
 		})
-		if (!chat) throw new Error('Chat not found or access denied')
-		return this.prisma.message.findMany({ where: { chatId } })
+		if (!chat) throw new ForbiddenException('Chat not found or access denied')
+
+		return this.prisma.message.findMany({
+			where: { chatId },
+			orderBy: { sentAt: 'asc' },
+			skip: (page - 1) * limit,
+			take: limit,
+			include: { sender: { select: { id: true, displayUsername: true } } },
+		})
 	}
 
 	async markAsRead(userId: string, chatId: string) {

@@ -1,11 +1,15 @@
+import { Transform, Type } from 'class-transformer'
 import {
 	IsBoolean,
+	IsInt,
 	IsNotEmpty,
 	IsNumber,
 	IsOptional,
 	IsString,
 	isUUID,
 	IsUUID,
+	Max,
+	Min,
 } from 'class-validator'
 
 export class SendMessageDto {
@@ -18,15 +22,18 @@ export class SendMessageDto {
 }
 
 export class GetMessagesDto {
-	@IsUUID()
-	chatId: string
+	@IsInt()
+	@Min(1)
+	@IsOptional()
+	@Type(() => Number)
+	page: number = 1
 
-	// @IsNumber()
-	// limit: number
-
-	// @IsOptional()
-	// @IsString()
-	// cursor?: string // messageId или createdAt
+	@IsInt()
+	@Min(1)
+	@Max(30)
+	@IsOptional()
+	@Type(() => Number)
+	limit: number = 30
 }
 
 export class MarkReadDto {

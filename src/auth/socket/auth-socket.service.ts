@@ -19,7 +19,7 @@ export class AuthSocketService {
 			client.handshake.headers?.authorization?.split(' ')[1]
 
 		if (!token) {
-			client.emit('auth_error', 'Missing token')
+			client.emit('errors', 'Missing token')
 			return client.disconnect()
 		}
 
@@ -35,13 +35,13 @@ export class AuthSocketService {
 				!hasSecuritySettings(user) ||
 				user.securitySettings.jwtTokenVersion !== payload.version
 			) {
-				client.emit('auth_error', 'Invalid or expired token')
+				client.emit('errors', 'Invalid or expired token')
 				return client.disconnect()
 			}
 
 			client.user = user
 		} catch (err) {
-			client.emit('auth_error', 'Invalid or expired token')
+			client.emit('errors', 'Invalid or expired token')
 			client.disconnect()
 		}
 	}
