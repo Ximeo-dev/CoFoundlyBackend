@@ -6,7 +6,6 @@ import {
 	IsNumber,
 	IsOptional,
 	IsString,
-	isUUID,
 	IsUUID,
 	Max,
 	Min,
@@ -14,7 +13,7 @@ import {
 
 export class SendMessageDto {
 	@IsUUID()
-	recipientId: string
+	chatId: string
 
 	@IsString()
 	@IsNotEmpty()

@@ -42,53 +42,54 @@ export class SecurityService {
 		return `email:${action}:${userId}`
 	}
 
-	private changeEmailKey(token: string) {
+	private changeEmailTokenKey(token: string) {
 		return `email:${SecurityAction.CHANGE_EMAIL}:token:${token}`
+	}
+
+	private changeEmailKey(email: string) {
+		return `email:${SecurityAction.CHANGE_EMAIL}:email:${email}`
 	}
 
 	async issueActionEmailToken(userId: string, action: SecurityAction) {
 		const user = await this.userService.getById(userId)
 		if (!user) throw new NotFoundException('User not found')
 
+		const key = this.actionEmailKey(userId, action)
+
 		const token = this.generateToken()
 		const ttl = TTL_BY_SECURITY_ACTION[action] || 300
-
-		let key: string
-		if (action === SecurityAction.CHANGE_EMAIL) {
-			key = this.changeEmailKey(token)
-		} else {
-			key = this.actionEmailKey(userId, action)
-		}
 
 		await this.redis.set(key, token, ttl)
 		return token
 	}
 
-	async issueChangeEmailToken(userId: string, newEmail: string) {
+	async issueChangeEmailToken(newEmail: string) {
 		const action = SecurityAction.CHANGE_EMAIL
 
-		const user = await this.userService.getById(userId)
-		if (!user) throw new NotFoundException('User not found')
-
-		const ttl = TTL_BY_SECURITY_ACTION[action] || 300
+		const existing = await this.redis.get(this.changeEmailKey(newEmail))
+		if (existing) return existing
 
 		let token: string
 		do {
 			token = this.generateToken()
-		} while (await this.redis.exists(this.changeEmailKey(token)))
+		} while (await this.redis.exists(this.changeEmailTokenKey(token)))
 
-		const key = this.changeEmailKey(token)
+		const ttl = TTL_BY_SECURITY_ACTION[action] || 300
 
-		await this.redis.set(key, newEmail, ttl)
+		await this.redis.set(this.changeEmailTokenKey(token), newEmail, ttl)
+		await this.redis.set(this.changeEmailKey(newEmail), token, ttl)
+
 		return token
 	}
 
 	async verifyChangeEmailToken(token: string): Promise<string | null> {
-		const key = this.changeEmailKey(token)
-		const newEmail = await this.redis.get(key)
+		const tokenKey = this.changeEmailTokenKey(token)
+		const newEmail = await this.redis.get(tokenKey)
 		if (!newEmail) return null
 
-		await this.redis.del(key)
+		const emailKey = this.changeEmailKey(newEmail)
+		await this.redis.del(tokenKey)
+		await this.redis.del(emailKey)
 		return newEmail
 	}
 
@@ -212,7 +213,7 @@ export class SecurityService {
 		if (emailUser)
 			throw new BadRequestException('Пользователь с таким email уже существует')
 
-		const token = await this.issueChangeEmailToken(userId, dto.newEmail)
+		const token = await this.issueChangeEmailToken(dto.newEmail)
 		const confirmationUrl = `http://${getEnvVar('API_URL')}/security/change-email/confirm?userId=${userId}&token=${token}`
 
 		const context = {

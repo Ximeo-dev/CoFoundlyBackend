@@ -34,8 +34,6 @@ async function bootstrap() {
 		}),
 	)
 
-	app.useWebSocketAdapter(new CustomSocketIoAdapter(app))
-
 	await app.listen(getEnvVar('PORT'))
 }
 bootstrap()

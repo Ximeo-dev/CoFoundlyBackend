@@ -2,17 +2,19 @@ import {
 	BadRequestException,
 	ForbiddenException,
 	Injectable,
+	NotFoundException,
 } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
+import { UserProfileService } from 'src/profile/user-profile.service'
 import {
 	DeleteMessageDto,
 	GetMessagesDto,
 	MessageEditDto,
 	SendMessageDto,
-} from './dto/chat.dto'
-import { ChatResponseDto } from './dto/response.dto'
-import { UserProfileService } from 'src/profile/user-profile.service'
-import { ChatParticipant } from './types/chat.types'
+} from '../dto/chat.dto'
+import { ChatResponseDto } from '../dto/response.dto'
+import { ChatParticipant } from '../types/chat.types'
+import { Chat, ChatType } from '@prisma/client'
 
 @Injectable()
 export class ChatService {
@@ -73,24 +75,14 @@ export class ChatService {
 	}
 
 	async sendMessage(userId: string, dto: SendMessageDto) {
-		if (userId === dto.recipientId)
-			throw new BadRequestException('You cannot message yourself')
-
-		let chat = await this.prisma.chat.findFirst({
+		const chat = await this.prisma.chat.findUnique({
 			where: {
-				type: 'DIRECT',
-				participants: { every: { id: { in: [userId, dto.recipientId] } } },
+				id: dto.chatId,
 			},
 		})
-		const isNewChat = !chat
-		if (!chat) {
-			chat = await this.prisma.chat.create({
-				data: {
-					type: 'DIRECT',
-					participants: { connect: [{ id: userId }, { id: dto.recipientId }] },
-				},
-			})
-		}
+
+		if (!chat)
+			throw new NotFoundException(`Chat with id ${dto.chatId} not found`)
 
 		const message = await this.prisma.message.create({
 			data: {
@@ -100,7 +92,71 @@ export class ChatService {
 			},
 		})
 
-		return { message, isNewChat }
+		return message
+	}
+
+	async createChat(
+		participantIds: string[],
+		type: ChatType,
+		projectId?: string,
+	) {
+		if (type === 'DIRECT' && participantIds.length !== 2) {
+			throw new BadRequestException(
+				'Direct chat must have exactly 2 participants',
+			)
+		}
+
+		if (type === 'PROJECT' && !projectId) {
+			throw new BadRequestException('Project chat must have a projectId')
+		}
+
+		if (type === 'DIRECT') {
+			const chat = await this.prisma.chat.findFirst({
+				where: {
+					type: 'DIRECT',
+					participants: {
+						some: { id: participantIds[0] },
+					},
+					AND: {
+						participants: {
+							some: { id: participantIds[1] },
+						},
+					},
+				},
+				include: {
+					participants: true,
+				},
+			})
+
+			if (chat && chat.participants.length === 2) {
+				throw new BadRequestException('Chat already exists')
+			}
+		}
+
+		if (type === 'PROJECT') {
+			const chat = await this.prisma.chat.findFirst({
+				where: {
+					type: 'PROJECT',
+					projectId,
+				},
+			})
+
+			if (chat) {
+				throw new BadRequestException('Chat already exists')
+			}
+		}
+
+		const chat = await this.prisma.chat.create({
+			data: {
+				type,
+				participants: {
+					connect: participantIds.map((id) => ({ id })),
+				},
+				...(type === 'PROJECT' && { projectId }),
+			},
+		})
+
+		return chat
 	}
 
 	async getMessages(userId: string, chatId: string, dto: GetMessagesDto) {

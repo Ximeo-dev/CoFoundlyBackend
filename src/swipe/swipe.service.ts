@@ -3,6 +3,10 @@ import { PrismaService } from 'src/prisma/prisma.service'
 import { ComputingService } from './computing.service'
 import { SwipeAction, SwipeIntent } from './types/swipe.types'
 import { UserProfileService } from 'src/profile/user-profile.service'
+import { WebsocketService } from 'src/ws/websocket.service'
+import { ChatService } from 'src/ws/chat/chat.service'
+import { ChatType } from '@prisma/client'
+import { ChatServerEvent } from 'src/ws/types/chat-events'
 
 @Injectable()
 export class SwipeService {
@@ -10,6 +14,8 @@ export class SwipeService {
 		private readonly prisma: PrismaService,
 		private readonly computingService: ComputingService,
 		private readonly userProfileService: UserProfileService,
+		private readonly websocketService: WebsocketService,
+		private readonly chatService: ChatService,
 	) {}
 
 	async findCandidate(currentUserId: string, intent: SwipeIntent) {
@@ -95,7 +101,6 @@ export class SwipeService {
 			})
 		}
 
-		// Проверка на матч (взаимный свайп вправо)
 		if (action === SwipeAction.LIKE) {
 			const reverseSwipe = await this.prisma.swipe.findFirst({
 				where: {
@@ -106,6 +111,26 @@ export class SwipeService {
 			})
 
 			if (reverseSwipe) {
+				const participantIds = [fromUserId, toUserId]
+				const chat = await this.chatService.createChat(
+					participantIds,
+					ChatType.DIRECT,
+				)
+
+				const usersSockets = await this.websocketService.server
+					.in(participantIds)
+					.fetchSockets()
+
+				usersSockets.forEach((socket) => {
+					socket.join(chat.id)
+				})
+
+				this.websocketService.emitToRoom(
+					chat.id,
+					ChatServerEvent.NEW_CHAT,
+					chat,
+				)
+
 				return { isMatch: true, matchedUserId: toUserId }
 			}
 		}

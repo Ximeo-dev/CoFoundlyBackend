@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-import { AuthenticatedSocket } from 'src/chat/types/socket.types'
 import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
+import { AuthenticatedSocket } from 'src/ws/types/socket.types'
 
 @Injectable()
 export class AuthSocketService {

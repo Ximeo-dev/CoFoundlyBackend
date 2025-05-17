@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
+import { GetMessagesDto } from '../dto/chat.dto'
 import { ChatService } from './chat.service'
-import { GetMessagesDto } from './dto/chat.dto'
 
 @Controller('chat')
 export class ChatController {
