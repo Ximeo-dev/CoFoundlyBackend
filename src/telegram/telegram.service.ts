@@ -2,12 +2,12 @@ import { InjectBot } from '@grammyjs/nestjs'
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Bot, Context } from 'grammy'
-import { TwoFactorService } from 'src/two-factor/two-factor.service'
+import { TwoFactorService } from 'src/security/two-factor.service'
 import {
 	TwoFactorAction,
 	TwoFactorActionStatusEnum,
 	TwoFactorHandleResult,
-} from 'src/two-factor/types/two-factor.types'
+} from 'src/security/types/two-factor.types'
 import { UserWithSecurity } from 'src/user/types/user.types'
 import { getActionText } from './action-texts'
 import { getErrorText } from './error-texts'

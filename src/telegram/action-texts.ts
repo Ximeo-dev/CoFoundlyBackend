@@ -2,7 +2,7 @@ import { compile } from 'handlebars'
 import {
 	TwoFactorAction,
 	TwoFactorActionStatus,
-} from 'src/two-factor/types/two-factor.types'
+} from 'src/security/types/two-factor.types'
 
 export const ActionTexts = {
 	[TwoFactorAction.BIND]: {

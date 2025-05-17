@@ -1,5 +1,5 @@
 import { compile } from 'handlebars'
-import { TwoFactorHandleResult } from 'src/two-factor/types/two-factor.types'
+import { TwoFactorHandleResult } from 'src/security/types/two-factor.types'
 
 export const ErrorTexts = {
 	[TwoFactorHandleResult.UserNotFound]: '⚠️ Пользователь не найден',

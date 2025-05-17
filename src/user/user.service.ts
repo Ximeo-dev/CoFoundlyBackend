@@ -156,17 +156,6 @@ export class UserService {
 		})
 	}
 
-	async setEmailConfirmationToken(userId: string, token: string) {
-		await this.prisma.securitySettings.update({
-			where: {
-				userId,
-			},
-			data: {
-				emailConfirmationToken: token,
-			},
-		})
-	}
-
 	async setConfirmedEmailStatus(userId: string, status: boolean) {
 		await this.prisma.securitySettings.update({
 			where: {
@@ -174,17 +163,6 @@ export class UserService {
 			},
 			data: {
 				isEmailConfirmed: status,
-			},
-		})
-	}
-
-	async setResetPasswordToken(userId: string, token: string) {
-		await this.prisma.securitySettings.update({
-			where: {
-				userId,
-			},
-			data: {
-				resetPasswordToken: token,
 			},
 		})
 	}
@@ -203,32 +181,10 @@ export class UserService {
 		})
 	}
 
-	async setChangeEmailToken(userId: string, token: string) {
-		await this.prisma.securitySettings.update({
-			where: {
-				userId,
-			},
-			data: {
-				changeEmailToken: token,
-			},
-		})
-	}
-
 	async changeEmail(userId: string, email: string) {
 		await this.prisma.user.update({
 			where: { id: userId },
 			data: { email },
-		})
-	}
-
-	async set2FAToken(userId: string, token: string | null) {
-		await this.prisma.securitySettings.update({
-			where: {
-				userId,
-			},
-			data: {
-				twoFactorToken: token,
-			},
 		})
 	}
 

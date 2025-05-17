@@ -5,7 +5,7 @@ import {
 	NotFoundException,
 } from '@nestjs/common'
 import { randomBytes } from 'crypto'
-import { GRACE_TTL, TTL_BY_ACTION } from 'src/constants/constants'
+import { GRACE_TTL, TTL_BY_2FA_ACTION } from 'src/constants/constants'
 import { RedisService } from 'src/redis/redis.service'
 import { TelegramService } from 'src/telegram/telegram.service'
 import {
@@ -13,22 +13,20 @@ import {
 	TwoFactorActionStatus,
 	TwoFactorActionStatusEnum,
 	TwoFactorHandleResult,
-} from 'src/two-factor/types/two-factor.types'
+} from 'src/security/types/two-factor.types'
 import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
+import { SecurityService } from './security.service'
 
 @Injectable()
 export class TwoFactorService {
 	constructor(
+		private readonly securityService: SecurityService,
 		private readonly userService: UserService,
 		private readonly redis: RedisService,
 		@Inject(forwardRef(() => TelegramService))
 		private readonly telegramService: TelegramService,
 	) {}
-
-	private generateToken(): string {
-		return randomBytes(16).toString('hex')
-	}
 
 	private bind2FATokenKey(token: string) {
 		return `2fa:${TwoFactorAction.BIND}:token:${token}`
@@ -54,17 +52,17 @@ export class TwoFactorService {
 
 		let token: string
 		do {
-			token = this.generateToken()
+			token = this.securityService.generateToken()
 		} while (await this.redis.exists(this.bind2FATokenKey(token)))
 
-		const ttl = TTL_BY_ACTION[action] ?? 60
+		const ttl = TTL_BY_2FA_ACTION[action] ?? 60
 		await this.redis.set(this.bind2FATokenKey(token), userId, ttl)
 		await this.redis.set(this.bind2FAUserIdKey(userId), token, ttl)
 
 		return token
 	}
 
-	async validateBindToken(token: string): Promise<string | null> {
+	async verifyBindToken(token: string): Promise<string | null> {
 		const tokenKey = this.bind2FATokenKey(token)
 		const userId = await this.redis.get(tokenKey)
 		if (!userId) return null
@@ -75,7 +73,7 @@ export class TwoFactorService {
 		return userId
 	}
 
-	async issueAction(userId: string, action: TwoFactorAction, ip: string) {
+	async issue2FAAction(userId: string, action: TwoFactorAction, ip: string) {
 		const user = await this.userService.getByIdWithSecuritySettings(userId)
 
 		if (!hasSecuritySettings(user))
@@ -95,7 +93,7 @@ export class TwoFactorService {
 		}
 
 		const key = this.action2FAKey(userId, action)
-		const ttl = TTL_BY_ACTION[action] ?? 60
+		const ttl = TTL_BY_2FA_ACTION[action] ?? 60
 		await this.redis.set(key, TwoFactorActionStatusEnum.PENDING, ttl)
 
 		await this.telegramService.send2FAConfirmation(
@@ -155,7 +153,7 @@ export class TwoFactorService {
 	}
 
 	async handleBindToken(token: string) {
-		const userId = await this.validateBindToken(token)
+		const userId = await this.verifyBindToken(token)
 
 		if (!userId) {
 			return { result: TwoFactorHandleResult.TokenExpired }

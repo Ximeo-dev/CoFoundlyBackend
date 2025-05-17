@@ -11,7 +11,6 @@ import {
 	ValidationPipe,
 } from '@nestjs/common'
 import { Request, Response } from 'express'
-import { EmailService } from 'src/email/email.service'
 import { UserService } from 'src/user/user.service'
 import { AuthService } from './auth.service'
 import { LoginDto } from './dto/login.dto'
@@ -20,17 +19,12 @@ import {
 	RegisterDto,
 	UsernameAvailableDto,
 } from './dto/register.dto'
-import {
-	ResetPasswordConfirmDto,
-	ResetPasswordRequestDto,
-} from './dto/reset-password.dto'
 
 @Controller('auth')
 export class AuthController {
 	constructor(
 		private readonly authService: AuthService,
 		private readonly userService: UserService,
-		private readonly emailService: EmailService,
 	) {}
 
 	@UsePipes(new ValidationPipe())
@@ -120,26 +114,5 @@ export class AuthController {
 
 		if (!user) return true
 		return false
-	}
-
-	@UsePipes(new ValidationPipe())
-	@HttpCode(200)
-	@Post('reset-password')
-	async resetPasswordRequest(@Body() dto: ResetPasswordRequestDto) {
-		await this.emailService.sendEmailResetPassword(dto.email)
-		return { message: 'Confirmation email sent' }
-	}
-
-	@UsePipes(new ValidationPipe())
-	@HttpCode(200)
-	@Post('reset-password/confirm')
-	async confirmResetPassword(
-		@Query('userId') userId: string,
-		@Query('token') token: string,
-		@Body() dto: ResetPasswordConfirmDto,
-	) {
-		await this.emailService.verifyResetPasswordToken(userId, token)
-		await this.emailService.confirmResetPassword(userId, dto)
-		return { message: 'Password reset successfully' }
 	}
 }

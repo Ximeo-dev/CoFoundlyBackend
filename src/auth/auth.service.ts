@@ -61,7 +61,7 @@ export class AuthService {
 		return { accessToken, refreshToken }
 	}
 
-	private async validateUser(dto: LoginDto) {
+	public async validateUser(dto: LoginDto) {
 		const userWithSecurity =
 			await this.userService.getByEmailWithSecuritySettings(dto.email)
 
