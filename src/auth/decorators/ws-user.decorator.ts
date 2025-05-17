@@ -1,6 +1,6 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common'
 import { User } from '@prisma/client'
-import { AuthenticatedSocket } from 'src/chat/types/socket.types'
+import { AuthenticatedSocket } from 'src/ws/types/socket.types'
 
 export const WSCurrentUser = createParamDecorator(
 	(data: keyof User, ctx: ExecutionContext) => {

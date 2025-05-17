@@ -1,78 +1,41 @@
-import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common'
+import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common'
 import {
 	ConnectedSocket,
 	MessageBody,
-	OnGatewayConnection,
-	OnGatewayDisconnect,
 	SubscribeMessage,
 	WebSocketGateway,
 	WebSocketServer,
 } from '@nestjs/websockets'
-import { Server, Socket } from 'socket.io'
+import { Server } from 'socket.io'
 import { WSCurrentUser } from 'src/auth/decorators/ws-user.decorator'
-import { AuthSocketService } from 'src/auth/socket/auth-socket.service'
 import { WsExceptionFilter } from 'src/exceptions/WsExceptionFilter'
-import { ChatService } from './chat.service'
 import {
 	DeleteMessageDto,
 	MarkReadDto,
 	MessageEditDto,
 	SendMessageDto,
 	UserTypingDto,
-} from './dto/chat.dto'
-import { ChatClientEvent, ChatServerEvent } from './types/chat-events'
-import { AuthenticatedSocket } from './types/socket.types'
+} from '../dto/chat.dto'
+import { ChatClientEvent, ChatServerEvent } from '../types/chat-events'
+import { AuthenticatedSocket } from '../types/socket.types'
+import { ChatService } from './chat.service'
 
 @WebSocketGateway({
-	namespace: '/chat',
-	origin: ['http://localhost:3000', 'https://cofoundly.infinitum.su'],
+	namespace: '/',
 })
 @UseFilters(WsExceptionFilter)
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
-	private logger: Logger = new Logger('ChatGateway')
+export class ChatGateway {
 	@WebSocketServer() server: Server
 
-	constructor(
-		private readonly chatService: ChatService,
-		private readonly authSocketService: AuthSocketService,
-	) {}
-
-	async handleConnection(client: AuthenticatedSocket) {
-		await this.authSocketService.attachUserToSocket(client)
-		const userId = client?.user?.id
-		if (!userId) return
-		client.join(userId)
-		const chats = await this.chatService.getUserDirectChats(userId)
-		chats.forEach((chat) => {
-			client.join(chat.id)
-		})
-		this.logger.debug(`Client connected: ${client.id}`)
-	}
-
-	handleDisconnect(client: Socket) {
-		this.logger.debug(`Client disconnected: ${client.id}`)
-	}
+	constructor(private readonly chatService: ChatService) {}
 
 	@SubscribeMessage(ChatClientEvent.SEND_MESSAGE)
 	@UsePipes(new ValidationPipe())
 	async onSendMessage(
 		@WSCurrentUser('id') userId: string,
 		@MessageBody() dto: SendMessageDto,
-		@ConnectedSocket() client: AuthenticatedSocket,
 	) {
-		const { message, isNewChat } = await this.chatService.sendMessage(
-			userId,
-			dto,
-		)
-		if (isNewChat) {
-			client.join(message.chatId)
-			const recipientSockets = await this.server
-				.in(dto.recipientId)
-				.fetchSockets()
-			recipientSockets.forEach((socket) => {
-				socket.join(message.chatId)
-			})
-		}
+		const message = await this.chatService.sendMessage(userId, dto)
 		this.server.to(message.chatId).emit(ChatServerEvent.NEW_MESSAGE, message)
 		return message
 	}
