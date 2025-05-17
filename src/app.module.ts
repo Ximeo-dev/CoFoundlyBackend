@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common'
-import { AppController } from './app.controller'
-import { UserModule } from './user/user.module'
 import { ConfigModule } from '@nestjs/config'
-import { AuthModule } from './auth/auth.module'
-import { TelegramModule } from './telegram/telegram.module'
-import { EmailModule } from './email/email.module'
-import { SwipeModule } from './swipe/swipe.module'
 import { ProfileModule } from 'src/profile/profile.module'
-import { ImagesModule } from './images/images.module'
-import { RedisModule } from './redis/redis.module'
-import { PrismaModule } from './prisma/prisma.module'
-import { S3Module } from './s3/s3.module'
-import { TwoFactorModule } from './two-factor/two-factor.module'
+import { AppController } from './app.controller'
+import { AuthModule } from './auth/auth.module'
+import { ChatModule } from './chat/chat.module'
 import { EntitiesModule } from './entities/entities.module'
-import { ChatModule } from './chat/chat.module';
+import { ImagesModule } from './images/images.module'
+import { MailModule } from './mail/mail.module'
+import { PrismaModule } from './prisma/prisma.module'
+import { RedisModule } from './redis/redis.module'
+import { S3Module } from './s3/s3.module'
+import { SwipeModule } from './swipe/swipe.module'
+import { TelegramModule } from './telegram/telegram.module'
+import { SecurityModule } from './security/security.module'
+import { UserModule } from './user/user.module'
 
 @Module({
 	imports: [
@@ -22,7 +22,7 @@ import { ChatModule } from './chat/chat.module';
 		}),
 		UserModule,
 		AuthModule,
-		EmailModule,
+		MailModule,
 		TelegramModule,
 		SwipeModule,
 		ProfileModule,
@@ -30,7 +30,7 @@ import { ChatModule } from './chat/chat.module';
 		RedisModule,
 		PrismaModule,
 		S3Module,
-		TwoFactorModule,
+		SecurityModule,
 		EntitiesModule,
 		ChatModule,
 	],

@@ -4,16 +4,14 @@ import {
 	HttpCode,
 	Post,
 	UseGuards,
-	UsePipes,
-	ValidationPipe,
 } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
-import { TwoFactorAction } from 'src/two-factor/types/two-factor.types'
+import { Require2FA } from 'src/security/decorators/two-factor.decorator'
+import { TwoFactorGuard } from 'src/security/guards/two-factor.guard'
+import { TwoFactorAction } from 'src/security/types/two-factor.types'
 import { UserService } from 'src/user/user.service'
 import { TwoFactorService } from './two-factor.service'
-import { Require2FA } from 'src/auth/decorators/two-factor.decorator'
-import { TwoFactorGuard } from 'src/auth/guards/two-factor.guard'
 
 @Controller('2fa')
 export class TwoFactorController {

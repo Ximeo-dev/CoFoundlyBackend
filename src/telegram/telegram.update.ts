@@ -11,7 +11,7 @@ import { Bot, CallbackQueryContext, CommandContext, Context } from 'grammy'
 import { TelegramService } from './telegram.service'
 import { parseCommandArgs } from 'src/utils/parse-command-args'
 import { getActionText } from './action-texts'
-import { TwoFactorAction, TwoFactorActionStatusEnum } from 'src/two-factor/types/two-factor.types'
+import { TwoFactorAction, TwoFactorActionStatusEnum } from 'src/security/types/two-factor.types'
 
 @Update()
 @Injectable()

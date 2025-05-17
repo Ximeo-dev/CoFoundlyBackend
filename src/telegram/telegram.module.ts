@@ -3,13 +3,12 @@ import { forwardRef, Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { getTelegramConfig } from 'src/config/telegram.config'
 import { TelegramUpdate } from './telegram.update'
-import { AuthModule } from 'src/auth/auth.module'
 import { TelegramService } from './telegram.service'
-import { TwoFactorModule } from 'src/two-factor/two-factor.module'
+import { SecurityModule } from 'src/security/security.module'
 
 @Module({
 	imports: [
-		forwardRef(() => TwoFactorModule),
+		forwardRef(() => SecurityModule),
 		ConfigModule,
 		NestjsGrammyModule.forRootAsync({
 			imports: [ConfigModule],

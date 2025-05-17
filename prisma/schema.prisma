@@ -195,11 +195,7 @@ model SecuritySettings {
   passwordHash     String
   twoFactorEnabled Boolean @default(false)
   telegramId String?
-  twoFactorToken String?
   isEmailConfirmed Boolean @default(false)
-  emailConfirmationToken String?
-  changeEmailToken String?
-  resetPasswordToken String?
   jwtTokenVersion Int @default(0)
   user             User    @relation(fields: [userId], references: [id])
 }

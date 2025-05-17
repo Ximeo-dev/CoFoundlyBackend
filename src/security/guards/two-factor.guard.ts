@@ -6,8 +6,8 @@ import {
 	UnauthorizedException,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { TwoFactorService } from 'src/two-factor/two-factor.service'
-import { TwoFactorAction } from 'src/two-factor/types/two-factor.types'
+import { TwoFactorService } from 'src/security/two-factor.service'
+import { TwoFactorAction } from 'src/security/types/two-factor.types'
 import { REQUIRE_2FA_KEY } from '../decorators/two-factor.decorator'
 
 @Injectable()
@@ -32,8 +32,12 @@ export class TwoFactorGuard implements CanActivate {
 
 		const forwarded = request.headers['x-forwarded-for'] as string
 		const ip = forwarded ? forwarded.split(',')[0].trim() : request.ip
-	
-		const isIssued = await this.twoFactorService.issueAction(userId, action, ip)
+
+		const isIssued = await this.twoFactorService.issue2FAAction(
+			userId,
+			action,
+			ip,
+		)
 
 		if (isIssued) throw new ForbiddenException('2FA confirmation required')
 
