@@ -172,7 +172,7 @@ export class ChatService {
 		const chat = await this.prisma.chat.findFirst({
 			where: { id: chatId, participants: { some: { id: userId } } },
 		})
-		if (!chat) throw new ForbiddenException('Chat not found or access denied')
+		if (!chat) throw new NotFoundException('Chat not found')
 
 		return this.prisma.message.findMany({
 			where: { chatId },

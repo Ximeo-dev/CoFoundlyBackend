@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { NotificationType } from '@prisma/client'
 import { PrismaService } from 'src/prisma/prisma.service'
+import { GetNotificationsDto } from '../dto/notification.dto'
 
 @Injectable()
 export class NotificationsService {
@@ -16,11 +17,14 @@ export class NotificationsService {
 		})
 	}
 
-	async getForUser(userId: string) {
+	async getUserNotifications(userId: string, dto: GetNotificationsDto) {
+		const { page, limit } = dto
+
 		return this.prisma.notification.findMany({
 			where: { userId },
 			orderBy: { createdAt: 'desc' },
-			take: 10,
+			skip: (page - 1) * limit,
+			take: limit,
 		})
 	}
 
