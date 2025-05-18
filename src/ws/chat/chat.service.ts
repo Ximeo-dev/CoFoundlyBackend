@@ -187,33 +187,44 @@ export class ChatService {
 	}
 
 	async markMessagesAsRead(userId: string, messageIds: string[]) {
-		const existingReceipts = await this.prisma.readReceipt.findMany({
+		if (!messageIds.length) return []
+
+		const messagesWithReceipts = await this.prisma.message.findMany({
 			where: {
-				userId,
-				messageId: { in: messageIds },
+				id: { in: messageIds },
 			},
-			select: { messageId: true },
-		})
-
-		const existingIds = new Set(existingReceipts.map((r) => r.messageId))
-		const newIds = messageIds.filter((id) => !existingIds.has(id))
-
-		await this.prisma.readReceipt.createMany({
-			data: newIds.map((id) => ({
-				messageId: id,
-				userId,
-			})),
-			skipDuplicates: true,
-		})
-
-		const createdReceipts = await this.prisma.readReceipt.findMany({
-			where: {
-				userId,
-				messageId: { in: newIds },
+			select: {
+				id: true,
+				senderId: true,
+				readReceipt: {
+					where: { userId },
+					select: { id: true },
+				},
 			},
 		})
 
-		return createdReceipts
+		const newReceipts = messagesWithReceipts
+			.filter((msg) => msg.senderId !== userId && !msg.readReceipt)
+			.map((msg) => ({
+				messageId: msg.id,
+				userId,
+			}))
+
+		if (newReceipts.length > 0) {
+			await this.prisma.readReceipt.createMany({
+				data: newReceipts,
+				skipDuplicates: true,
+			})
+		}
+
+		return this.prisma.readReceipt.findMany({
+			where: {
+				userId,
+				messageId: {
+					in: newReceipts.map((r) => r.messageId),
+				},
+			},
+		})
 	}
 
 	async deleteMessage(userId: string, dto: DeleteMessageDto) {
