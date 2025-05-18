@@ -65,5 +65,5 @@ export class MessageEditDto {
 
 	@IsString()
 	@IsNotEmpty()
-	content: string
+	newContent: string
 }

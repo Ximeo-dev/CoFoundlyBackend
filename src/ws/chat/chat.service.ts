@@ -188,22 +188,27 @@ export class ChatService {
 	}
 
 	async deleteMessage(userId: string, dto: DeleteMessageDto) {
-		const message = await this.prisma.message.findFirst({
-			where: { id: dto.messageId, senderId: userId },
+		const message = await this.prisma.message.findUnique({
+			where: { id: dto.messageId, chatId: dto.chatId },
 		})
-		if (!message) throw new Error('Message not found')
-		await this.prisma.message.delete({ where: { id: dto.messageId } })
-		return message
+		if (!message) throw new NotFoundException('Message not found')
+		if (message.senderId !== userId)
+			throw new BadRequestException('You can only delete your own messages')
+		return this.prisma.message.delete({
+			where: { id: message.id, chatId: message.chatId },
+		})
 	}
 
 	async editMessage(userId: string, dto: MessageEditDto) {
-		const message = await this.prisma.message.findFirst({
-			where: { id: dto.messageId, senderId: userId },
+		const message = await this.prisma.message.findUnique({
+			where: { id: dto.messageId, chatId: dto.chatId },
 		})
-		if (!message) throw new Error('Message not found or not authorized')
+		if (!message) throw new NotFoundException('Message not found')
+		if (message.senderId !== userId)
+			throw new BadRequestException('You can only edit your own messages')
 		return this.prisma.message.update({
-			where: { id: dto.messageId },
-			data: { content: dto.content, isEdited: true },
+			where: { id: message.id, chatId: message.chatId },
+			data: { content: dto.newContent, isEdited: true },
 		})
 	}
 }
