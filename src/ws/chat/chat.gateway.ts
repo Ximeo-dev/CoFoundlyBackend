@@ -70,9 +70,7 @@ export class ChatGateway {
 		@MessageBody() dto: DeleteMessageDto,
 	) {
 		const message = await this.chatService.deleteMessage(userId, dto)
-		this.server
-			.to(dto.chatId)
-			.emit(ChatServerEvent.MESSAGE_DELETED, { messageId: dto.messageId })
+		this.server.to(dto.chatId).emit(ChatServerEvent.MESSAGE_DELETED, message)
 	}
 
 	@SubscribeMessage(ChatClientEvent.EDIT_MESSAGE)
