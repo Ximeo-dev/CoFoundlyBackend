@@ -15,7 +15,6 @@ import {
 import { ChatResponseDto } from '../dto/response.dto'
 import { ChatParticipant } from '../types/chat.types'
 import { Chat, ChatType } from '@prisma/client'
-import e from 'express'
 import { RedisService } from 'src/redis/redis.service'
 
 @Injectable()
@@ -25,6 +24,10 @@ export class ChatService {
 		private readonly userProfileService: UserProfileService,
 		private readonly redis: RedisService,
 	) {}
+
+	private getChatMessagesCacheKey(chatId: string) {
+		return `chat:${chatId}:messages`
+	}
 
 	async getUserDirectChats(userId: string) {
 		const chats = await this.prisma.chat.findMany({
@@ -310,6 +313,18 @@ export class ChatService {
 		return this.prisma.message.update({
 			where: { id: message.id, chatId: message.chatId },
 			data: { content: dto.newContent, isEdited: true },
+		})
+	}
+
+	// Только для администрации
+	async deleteChat(chatId: string) {
+		const chat = await this.prisma.chat.findUnique({
+			where: { id: chatId },
+		})
+		if (!chat) throw new NotFoundException('Chat not found')
+
+		return this.prisma.chat.delete({
+			where: { id: chatId },
 		})
 	}
 }
