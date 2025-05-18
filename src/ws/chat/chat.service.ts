@@ -217,15 +217,21 @@ export class ChatService {
 	}
 
 	async deleteMessage(userId: string, dto: DeleteMessageDto) {
-		const message = await this.prisma.message.findUnique({
-			where: { id: dto.messageId, chatId: dto.chatId },
-		})
-		if (!message) throw new NotFoundException('Message not found')
-		if (message.senderId !== userId)
-			throw new BadRequestException('You can only delete your own messages')
-		return this.prisma.message.delete({
-			where: { id: message.id, chatId: message.chatId },
-		})
+		try {
+			const message = await this.prisma.message.findUnique({
+				where: { id: dto.messageId, chatId: dto.chatId },
+			})
+			if (!message) throw new NotFoundException('Message not found')
+			if (message.senderId !== userId)
+				throw new BadRequestException('You can only delete your own messages')
+			const deletedMessage = await this.prisma.message.delete({
+				where: { id: message.id, chatId: message.chatId },
+			})
+			return deletedMessage
+		} catch (error) {
+			console.error(error)
+			throw new BadRequestException('Delete message failed')
+		}
 	}
 
 	async editMessage(userId: string, dto: MessageEditDto) {

@@ -269,7 +269,7 @@ model Message {
 model ReadReceipt {
   id        String   @id @default(uuid()) @db.Uuid
   messageId String   @db.Uuid @unique
-  message   Message  @relation(fields: [messageId], references: [id])
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id])
   readAt    DateTime @default(now())
