@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Server } from 'socket.io'
-import { ChatServerEvent } from './types/chat-events'
+import { ChatServerEvent } from './types/events'
 
 @Injectable()
 export class WebsocketService {

@@ -1,6 +1,5 @@
 import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common'
 import {
-	ConnectedSocket,
 	MessageBody,
 	SubscribeMessage,
 	WebSocketGateway,
@@ -11,13 +10,12 @@ import { WSCurrentUser } from 'src/auth/decorators/ws-user.decorator'
 import { WsExceptionFilter } from 'src/exceptions/WsExceptionFilter'
 import {
 	DeleteMessageDto,
-	MarkReadDto,
+	MarkReadMessageDto,
 	MessageEditDto,
 	SendMessageDto,
 	UserTypingDto,
 } from '../dto/chat.dto'
-import { ChatClientEvent, ChatServerEvent } from '../types/chat-events'
-import { AuthenticatedSocket } from '../types/socket.types'
+import { ChatClientEvent, ChatServerEvent } from '../types/events'
 import { ChatService } from './chat.service'
 
 @WebSocketGateway({
@@ -44,12 +42,18 @@ export class ChatGateway {
 	@UsePipes(new ValidationPipe())
 	async onMarkRead(
 		@WSCurrentUser('id') userId: string,
-		@MessageBody() dto: MarkReadDto,
+		@MessageBody() dto: MarkReadMessageDto,
 	) {
-		await this.chatService.markAsRead(userId, dto.chatId)
-		this.server
-			.to(dto.chatId)
-			.emit(ChatServerEvent.READ, { chatId: dto.chatId, userId })
+		const readReceipts = await this.chatService.markMessagesAsRead(
+			userId,
+			dto.messageIds,
+		)
+
+		if (readReceipts.length > 0) {
+			this.server
+				.to(dto.chatId)
+				.emit(ChatServerEvent.MESSAGE_READ, readReceipts)
+		}
 	}
 
 	@SubscribeMessage(ChatClientEvent.TYPING)
