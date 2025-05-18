@@ -29,6 +29,7 @@ model User {
   userMessages     Message[]         @relation("UserMessages")
   OAuthAccount     OAuthAccount[]
   readReceipts ReadReceipt[]
+  notifications Notification[] @relation("UserNotifications")
 
   @@index([email, username])
 }
@@ -274,6 +275,23 @@ model ReadReceipt {
   readAt    DateTime @default(now())
 
   @@unique([messageId, userId])
+}
+
+model Notification {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  user        User     @relation("UserNotifications", fields: [userId], references: [id])
+  type        NotificationType
+  content     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+enum NotificationType {
+  MATCH
+  MESSAGE
+  INVITE
+  SYSTEM
 }
 
 model BlogPost {

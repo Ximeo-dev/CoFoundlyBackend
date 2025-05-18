@@ -15,6 +15,7 @@ import {
 import { ChatResponseDto } from '../dto/response.dto'
 import { ChatParticipant } from '../types/chat.types'
 import { Chat, ChatType } from '@prisma/client'
+import e from 'express'
 
 @Injectable()
 export class ChatService {
@@ -36,7 +37,14 @@ export class ChatService {
 						displayUsername: true,
 					},
 				},
-				messages: { take: 1, orderBy: { sentAt: 'desc' } },
+				messages: {
+					take: 1,
+					orderBy: { sentAt: 'desc' },
+					include: {
+						sender: { select: { id: true, displayUsername: true } },
+						readReceipt: true,
+					},
+				},
 			},
 		})
 
@@ -171,20 +179,41 @@ export class ChatService {
 			orderBy: { sentAt: 'asc' },
 			skip: (page - 1) * limit,
 			take: limit,
-			include: { sender: { select: { id: true, displayUsername: true } } },
+			include: {
+				sender: { select: { id: true, displayUsername: true } },
+				readReceipt: true,
+			},
 		})
 	}
 
-	async markAsRead(userId: string, chatId: string) {
-		const unreadMessages = await this.prisma.message.findMany({
-			where: { chatId, readReceipt: { NOT: { userId } } },
+	async markMessagesAsRead(userId: string, messageIds: string[]) {
+		const existingReceipts = await this.prisma.readReceipt.findMany({
+			where: {
+				userId,
+				messageId: { in: messageIds },
+			},
+			select: { messageId: true },
 		})
+
+		const existingIds = new Set(existingReceipts.map((r) => r.messageId))
+		const newIds = messageIds.filter((id) => !existingIds.has(id))
+
 		await this.prisma.readReceipt.createMany({
-			data: unreadMessages.map((msg) => ({
-				messageId: msg.id,
+			data: newIds.map((id) => ({
+				messageId: id,
 				userId,
 			})),
+			skipDuplicates: true,
 		})
+
+		const createdReceipts = await this.prisma.readReceipt.findMany({
+			where: {
+				userId,
+				messageId: { in: newIds },
+			},
+		})
+
+		return createdReceipts
 	}
 
 	async deleteMessage(userId: string, dto: DeleteMessageDto) {

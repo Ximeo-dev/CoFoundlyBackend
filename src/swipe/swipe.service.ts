@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { ChatType } from '@prisma/client'
 import { PrismaService } from 'src/prisma/prisma.service'
+import { UserProfileService } from 'src/profile/user-profile.service'
+import { ChatService } from 'src/ws/chat/chat.service'
+import { ChatServerEvent } from 'src/ws/types/events'
+import { WebsocketService } from 'src/ws/websocket.service'
 import { ComputingService } from './computing.service'
 import { SwipeAction, SwipeIntent } from './types/swipe.types'
-import { UserProfileService } from 'src/profile/user-profile.service'
-import { WebsocketService } from 'src/ws/websocket.service'
-import { ChatService } from 'src/ws/chat/chat.service'
-import { ChatType } from '@prisma/client'
-import { ChatServerEvent } from 'src/ws/types/chat-events'
 
 @Injectable()
 export class SwipeService {

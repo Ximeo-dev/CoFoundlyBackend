@@ -8,9 +8,17 @@ export enum ChatClientEvent {
 
 export enum ChatServerEvent {
 	NEW_MESSAGE = 'chat:new_message',
-	READ = 'chat:read',
-	USER_TYPING = 'chat:typing',
+	MESSAGE_READ = 'chat:message_read',
+	USER_TYPING = 'chat:user_typing',
 	MESSAGE_DELETED = 'chat:message_deleted',
 	MESSAGE_EDITED = 'chat:message_edited',
 	NEW_CHAT = 'chat:new_chat',
+}
+
+export enum NotificationClientEvent {
+	MARK_READ = 'notification:mark_read'
+}
+
+export enum NotificationServerEvent {
+	NEW_NOTIFICATION = 'notification:new_notification',
 }

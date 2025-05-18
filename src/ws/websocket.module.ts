@@ -8,6 +8,8 @@ import { ChatService } from './chat/chat.service'
 import { ConnectionGateway } from './connection.gateway'
 import { NotificationsGateway } from './notifications/notifications.gateway'
 import { WebsocketService } from './websocket.service'
+import { NotificationsController } from './notifications/notifications.controller'
+import { NotificationsService } from './notifications/notifications.service'
 
 @Module({
 	imports: [UserModule, AuthModule, ProfileModule],
@@ -17,8 +19,9 @@ import { WebsocketService } from './websocket.service'
 		ChatGateway,
 		ChatService,
 		NotificationsGateway,
+		NotificationsService,
 	],
-	controllers: [ChatController],
-	exports: [WebsocketService, ChatService],
+	controllers: [ChatController, NotificationsController],
+	exports: [WebsocketService, ChatService, NotificationsService],
 })
 export class WebsocketModule {}

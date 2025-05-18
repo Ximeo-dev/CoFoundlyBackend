@@ -1,9 +1,10 @@
-import { Transform, Type } from 'class-transformer'
+import { Type } from 'class-transformer'
 import {
+	ArrayNotEmpty,
+	IsArray,
 	IsBoolean,
 	IsInt,
 	IsNotEmpty,
-	IsNumber,
 	IsOptional,
 	IsString,
 	IsUUID,
@@ -35,9 +36,14 @@ export class GetMessagesDto {
 	limit: number = 30
 }
 
-export class MarkReadDto {
+export class MarkReadMessageDto {
 	@IsUUID()
 	chatId: string
+
+	@IsArray()
+	@ArrayNotEmpty()
+	@IsUUID('all', { each: true })
+	messageIds: string[]
 }
 
 export class UserTypingDto {
