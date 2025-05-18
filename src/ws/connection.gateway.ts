@@ -31,9 +31,10 @@ export class ConnectionGateway
 	) {}
 
 	async handleConnection(client: AuthenticatedSocket) {
+		this.logger.debug(`Client connecting: Client ID - ${client.id}`)
 		await this.authSocketService.attachUserToSocket(client)
 		const userId = client?.user?.id
-		if (!userId) return
+		if (!userId || client.disconnected) return
 		client.join(userId)
 		const chats = await this.chatService.getUserDirectChats(userId)
 		chats.forEach((chat) => {
@@ -43,7 +44,11 @@ export class ConnectionGateway
 	}
 
 	handleDisconnect(client: AuthenticatedSocket) {
-		this.logger.debug(`Client disconnected: User ID - ${client.user.id}`)
+		if (client.user && client.user.id) {
+			this.logger.debug(`Client disconnected: User ID - ${client.user.id}`)
+		} else {
+			this.logger.debug(`Client disconnected: Client ID - ${client.id}`)
+		}
 	}
 
 	afterInit() {
