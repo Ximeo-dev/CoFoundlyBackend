@@ -189,8 +189,6 @@ export class ChatService {
 	async markMessagesAsRead(userId: string, messageIds: string[]) {
 		if (!messageIds.length) return []
 
-		console.log(messageIds)
-
 		const messagesWithReceipts = await this.prisma.message.findMany({
 			where: {
 				id: { in: messageIds },
@@ -205,16 +203,12 @@ export class ChatService {
 			},
 		})
 
-		console.log(messagesWithReceipts.toString())
-
 		const newReceipts = messagesWithReceipts
 			.filter((msg) => msg.senderId !== userId && !msg.readReceipt)
 			.map((msg) => ({
 				messageId: msg.id,
 				userId,
 			}))
-
-		console.log(newReceipts)
 
 		if (newReceipts.length > 0) {
 			await this.prisma.readReceipt.createMany({
