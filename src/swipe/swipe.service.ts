@@ -125,11 +125,9 @@ export class SwipeService {
 					socket.join(chat.id)
 				})
 
-				this.websocketService.emitToRoom(
-					chat.id,
-					ChatServerEvent.NEW_CHAT,
-					chat,
-				)
+				this.websocketService.emitToRoom(chat.id, ChatServerEvent.NEW_CHAT, {
+					chatId: chat.id,
+				})
 
 				return { isMatch: true, matchedUserId: toUserId }
 			}

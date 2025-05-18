@@ -16,12 +16,14 @@ import { ChatResponseDto } from '../dto/response.dto'
 import { ChatParticipant } from '../types/chat.types'
 import { Chat, ChatType } from '@prisma/client'
 import e from 'express'
+import { RedisService } from 'src/redis/redis.service'
 
 @Injectable()
 export class ChatService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly userProfileService: UserProfileService,
+		private readonly redis: RedisService,
 	) {}
 
 	async getUserDirectChats(userId: string) {
@@ -80,6 +82,59 @@ export class ChatService {
 		})
 
 		return response
+	}
+
+	async getUserChat(userId: string, chatId: string): Promise<ChatResponseDto> {
+		const chat = await this.prisma.chat.findUnique({
+			where: {
+				id: chatId,
+			},
+			include: {
+				participants: {
+					select: {
+						id: true,
+						displayUsername: true,
+					},
+				},
+				messages: {
+					take: 1,
+					orderBy: { sentAt: 'desc' },
+					include: {
+						sender: { select: { id: true, displayUsername: true } },
+						readReceipt: true,
+					},
+				},
+			},
+		})
+
+		if (!chat) throw new NotFoundException(`Chat with id ${chatId} not found`)
+
+		const participantIds = Array.from(
+			new Set(
+				chat.participants.filter((p) => p.id !== userId).map((p) => p.id),
+			),
+		)
+
+		const profiles =
+			await this.userProfileService.getForeignUsersProfiles(participantIds)
+		const profileMap = new Map(
+			participantIds.map((id, index) => [id, profiles[index]]),
+		)
+
+		const participants: ChatParticipant[] = chat.participants
+			.filter((p) => p.id !== userId)
+			.map((participant) => ({
+				userId: participant.id,
+				displayUsername: participant.displayUsername,
+				profile: profileMap.get(participant.id),
+			}))
+
+		return {
+			id: chat.id,
+			type: chat.type,
+			participants,
+			messages: chat.messages,
+		}
 	}
 
 	async sendMessage(userId: string, dto: SendMessageDto) {

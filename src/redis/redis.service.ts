@@ -43,6 +43,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 		return this.client.del(key)
 	}
 
+	async listPush<T>(key: string, elements: T[]): Promise<number> {
+		if (!elements.length) return 0
+		const serialized = elements.map((e) => JSON.stringify(e))
+		return this.client.lpush(key, ...serialized)
+	}
+
+	async listGet<T>(key: string, start = 0, stop = -1): Promise<T[]> {
+		const items = await this.client.lrange(key, start, stop)
+		return items.map((item) => JSON.parse(item) as T)
+	}
+
 	async exists(key: string): Promise<boolean> {
 		const result = await this.client.exists(key)
 		return result === 1

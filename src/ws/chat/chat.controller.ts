@@ -22,6 +22,16 @@ export class ChatController {
 		return this.chatService.getUserDirectChats(userId)
 	}
 
+	@Get(':chatId')
+	@UsePipes(new ValidationPipe())
+	@Auth()
+	async getChat(
+		@CurrentUser('id') userId: string,
+		@Param('chatId', ParseUUIDPipe) chatId: string,
+	) {
+		return this.chatService.getUserChat(userId, chatId)
+	}
+
 	@Get(':chatId/messages')
 	@UsePipes(new ValidationPipe())
 	@Auth()
