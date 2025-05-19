@@ -117,13 +117,7 @@ export class SwipeService {
 					ChatType.DIRECT,
 				)
 
-				const usersSockets = await this.websocketService.server
-					.in(participantIds)
-					.fetchSockets()
-
-				usersSockets.forEach((socket) => {
-					socket.join(chat.id)
-				})
+				this.websocketService.server.in(participantIds).socketsJoin(chat.id)
 
 				this.websocketService.emitToRoom(chat.id, ChatServerEvent.NEW_CHAT, {
 					chatId: chat.id,

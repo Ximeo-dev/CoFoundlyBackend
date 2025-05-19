@@ -7,10 +7,12 @@ import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
 import { JwtStrategy } from './jwt.strategy'
 import { AuthSocketService } from './socket/auth-socket.service'
+import { WebsocketModule } from 'src/ws/websocket.module'
 
 @Module({
 	imports: [
 		UserModule,
+		WebsocketModule,
 		ConfigModule,
 		JwtModule.registerAsync({
 			global: true,

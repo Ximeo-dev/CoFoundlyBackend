@@ -21,4 +21,5 @@ export enum NotificationClientEvent {
 
 export enum NotificationServerEvent {
 	NEW_NOTIFICATION = 'notification:new_notification',
+	NOTIFICATION_READ = 'notification:notification_read',
 }

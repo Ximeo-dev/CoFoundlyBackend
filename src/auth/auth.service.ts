@@ -14,6 +14,7 @@ import { parseBool } from 'src/utils/parse-bool'
 import * as zxcvbn from 'zxcvbn'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
+import { WebsocketService } from 'src/ws/websocket.service'
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
 	constructor(
 		private readonly jwt: JwtService,
 		private readonly userService: UserService,
+		private readonly websocketService: WebsocketService,
 	) {}
 
 	async login(dto: LoginDto) {
@@ -118,8 +120,6 @@ export class AuthService {
 	}
 
 	addRefreshTokenToResponse(res: Response, refreshToken: string) {
-		//Когда фронт будет на infinitum.su, domain=infinitum.su, sameSite=lax
-		//Secure=true на проде
 		const expiresIn = new Date()
 		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
 
@@ -131,7 +131,7 @@ export class AuthService {
 			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
 		})
 
-		//Для сайта на localhost
+		//Для фронта на localhost
 		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
 			httpOnly: true,
 			expires: expiresIn,
@@ -149,7 +149,7 @@ export class AuthService {
 			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
 			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
 		})
-		//Для сайта на localhost
+		//Для фронта на localhost
 		res.cookie(this.REFRESH_TOKEN_NAME, '', {
 			httpOnly: true,
 			domain: 'localhost',
@@ -184,5 +184,13 @@ export class AuthService {
 			this.removeRefreshTokenFromResponse(res)
 			throw new UnauthorizedException('Invalid refresh token')
 		}
+	}
+
+	logout(userId: string, res: Response) {
+		this.removeRefreshTokenFromResponse(res)
+
+		this.websocketService.server.in(userId).disconnectSockets(true)
+
+		return true
 	}
 }

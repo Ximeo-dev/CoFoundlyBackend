@@ -37,6 +37,6 @@ export class NotificationsGateway {
 
 		this.server
 			.to(userId)
-			.emit(NotificationServerEvent.NEW_NOTIFICATION, notifications)
+			.emit(NotificationServerEvent.NOTIFICATION_READ, notifications)
 	}
 }
