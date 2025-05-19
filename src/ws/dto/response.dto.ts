@@ -14,4 +14,7 @@ export class ChatResponseDto {
 
 	@Expose()
 	messages: Message[]
+
+	@Expose()
+	unreadMessages: number
 }

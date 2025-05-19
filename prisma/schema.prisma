@@ -261,14 +261,14 @@ model Message {
   sentAt    DateTime @default(now())
   updatedAt DateTime @updatedAt
   isEdited Boolean @default(false)
-  readReceipt ReadReceipt?
+  readReceipt ReadReceipt[]
 
   @@index([senderId, chatId, sentAt])
 }
 
 model ReadReceipt {
   id        String   @id @default(uuid()) @db.Uuid
-  messageId String   @db.Uuid @unique
+  messageId String   @db.Uuid
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id])

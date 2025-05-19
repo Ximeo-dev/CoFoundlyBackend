@@ -53,6 +53,30 @@ export class ChatService {
 			},
 		})
 
+		const chatIds = chats.map((chat) => chat.id)
+
+		const unreadCounts = await this.prisma.message.groupBy({
+			by: ['chatId'],
+			where: {
+				chatId: { in: chatIds },
+				readReceipt: {
+					none: {
+						userId,
+					},
+				},
+				senderId: {
+					not: userId,
+				},
+			},
+			_count: {
+				id: true,
+			},
+		})
+
+		const unreadMap = new Map(
+			unreadCounts.map((entry) => [entry.chatId, entry._count.id]),
+		)
+
 		const participantIds = Array.from(
 			new Set(
 				chats.flatMap((chat) =>
@@ -81,6 +105,7 @@ export class ChatService {
 				type: chat.type,
 				participants,
 				messages: chat.messages,
+				unreadMessages: unreadMap.get(chat.id) ?? 0,
 			}
 		})
 
@@ -112,6 +137,18 @@ export class ChatService {
 
 		if (!chat) throw new NotFoundException(`Chat with id ${chatId} not found`)
 
+		const unreadCount = await this.prisma.message.count({
+			where: {
+				chatId: chatId,
+				senderId: { not: userId },
+				readReceipt: {
+					none: {
+						userId: userId,
+					},
+				},
+			},
+		})
+
 		const participantIds = Array.from(
 			new Set(
 				chat.participants.filter((p) => p.id !== userId).map((p) => p.id),
@@ -137,6 +174,7 @@ export class ChatService {
 			type: chat.type,
 			participants,
 			messages: chat.messages,
+			unreadMessages: unreadCount ?? 0,
 		}
 	}
 
