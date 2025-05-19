@@ -24,6 +24,7 @@ import { getHtmlTemplate } from 'src/utils/getHtmlTemplate'
 import { safeCompare } from 'src/utils/safe-compare'
 import * as zxcvbn from 'zxcvbn'
 import { SecurityAction } from './types/security.types'
+import { WebsocketService } from 'src/ws/websocket.service'
 
 @Injectable()
 export class SecurityService {
@@ -32,6 +33,7 @@ export class SecurityService {
 		private readonly redis: RedisService,
 		private readonly mailService: MailService,
 		private readonly authService: AuthService,
+		private readonly websocketService: WebsocketService,
 	) {}
 
 	public generateToken(): string {
@@ -194,6 +196,7 @@ export class SecurityService {
 
 		await this.userService.setPassword(user.id, dto.password)
 		await this.userService.invalidateTokens(user.id)
+		this.websocketService.server.in(userId).disconnectSockets(true)
 	}
 
 	async sendChangeEmailConfirmation(

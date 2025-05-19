@@ -16,9 +16,11 @@ export enum ChatServerEvent {
 }
 
 export enum NotificationClientEvent {
-	MARK_READ = 'notification:mark_read'
+	MARK_READ = 'notification:mark_read',
 }
 
 export enum NotificationServerEvent {
 	NEW_NOTIFICATION = 'notification:new_notification',
 }
+
+export type ServerEvents = ChatServerEvent | NotificationServerEvent

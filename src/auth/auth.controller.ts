@@ -19,6 +19,8 @@ import {
 	RegisterDto,
 	UsernameAvailableDto,
 } from './dto/register.dto'
+import { Auth } from './decorators/auth.decorator'
+import { CurrentUser } from './decorators/user.decorator'
 
 @Controller('auth')
 export class AuthController {
@@ -63,10 +65,12 @@ export class AuthController {
 
 	@HttpCode(200)
 	@Post('logout')
-	async logout(@Res({ passthrough: true }) res: Response) {
-		this.authService.removeRefreshTokenFromResponse(res)
-
-		return true
+	@Auth()
+	async logout(
+		@CurrentUser('id') userId: string,
+		@Res({ passthrough: true }) res: Response,
+	) {
+		return this.authService.logout(userId, res)
 	}
 
 	@HttpCode(200)

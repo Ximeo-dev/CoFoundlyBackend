@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { AuthModule } from 'src/auth/auth.module'
 import { ProfileModule } from 'src/profile/profile.module'
 import { UserModule } from 'src/user/user.module'
@@ -12,7 +12,7 @@ import { NotificationsController } from './notifications/notifications.controlle
 import { NotificationsService } from './notifications/notifications.service'
 
 @Module({
-	imports: [UserModule, AuthModule, ProfileModule],
+	imports: [UserModule, forwardRef(() => AuthModule), ProfileModule],
 	providers: [
 		WebsocketService,
 		ConnectionGateway,

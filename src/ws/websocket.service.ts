@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Server } from 'socket.io'
-import { ChatServerEvent } from './types/events'
+import { ChatServerEvent, ServerEvents } from './types/events'
 
 @Injectable()
 export class WebsocketService {
@@ -14,7 +14,7 @@ export class WebsocketService {
 		return this._server
 	}
 
-	emitToUser(userId: string, event: ChatServerEvent, payload: any) {
+	emitToUser(userId: string, event: ServerEvents, payload: any) {
 		this._server.to(userId).emit(event, payload)
 	}
 

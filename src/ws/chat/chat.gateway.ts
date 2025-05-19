@@ -15,7 +15,11 @@ import {
 	SendMessageDto,
 	UserTypingDto,
 } from '../dto/chat.dto'
-import { ChatClientEvent, ChatServerEvent } from '../types/events'
+import {
+	ChatClientEvent,
+	ChatServerEvent,
+	NotificationServerEvent,
+} from '../types/events'
 import { ChatService } from './chat.service'
 
 @WebSocketGateway({
@@ -33,8 +37,18 @@ export class ChatGateway {
 		@WSCurrentUser('id') userId: string,
 		@MessageBody() dto: SendMessageDto,
 	) {
-		const message = await this.chatService.sendMessage(userId, dto)
+		const { message, notificationsMap, recipientIds } =
+			await this.chatService.sendMessage(userId, dto)
+		if (!message) return
 		this.server.to(message.chatId).emit(ChatServerEvent.NEW_MESSAGE, message)
+
+		recipientIds.forEach((userId) => {
+			this.server.to(userId).emit(NotificationServerEvent.NEW_NOTIFICATION, {
+				notification: notificationsMap.get(userId),
+				data: message,
+			})
+		})
+
 		return message
 	}
 
