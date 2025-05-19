@@ -217,6 +217,11 @@ export class ChatService {
 					senderId: userId,
 					content: dto.content,
 				},
+				include: {
+					sender: {
+						select: { id: true, displayUsername: true },
+					},
+				},
 			})
 
 			return { message, notificationsMap, recipientIds }
