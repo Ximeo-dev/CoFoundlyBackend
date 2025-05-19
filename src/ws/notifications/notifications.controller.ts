@@ -16,7 +16,7 @@ import { GetNotificationsDto } from '../dto/notification.dto'
 export class NotificationsController {
 	constructor(private readonly notificationsService: NotificationsService) {}
 
-	@Get()
+	// @Get()
 	@UsePipes(new ValidationPipe())
 	@Auth()
 	async getNotifications(

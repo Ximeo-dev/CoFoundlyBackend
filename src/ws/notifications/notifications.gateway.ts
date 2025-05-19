@@ -24,7 +24,7 @@ export class NotificationsGateway {
 
 	constructor(private readonly notificationsService: NotificationsService) {}
 
-	@SubscribeMessage(NotificationClientEvent.MARK_READ)
+	// @SubscribeMessage(NotificationClientEvent.MARK_READ)
 	@UsePipes(new ValidationPipe())
 	async onMarkRead(
 		@WSCurrentUser('id') userId: string,
@@ -35,8 +35,6 @@ export class NotificationsGateway {
 			dto.notificationIds,
 		)
 
-		this.server
-			.to(userId)
-			.emit(NotificationServerEvent.NOTIFICATION_READ, notifications)
+		return notifications
 	}
 }

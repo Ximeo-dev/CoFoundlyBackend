@@ -1,7 +1,7 @@
 import {
 	BadRequestException,
-	ForbiddenException,
 	Injectable,
+	Logger,
 	NotFoundException,
 } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
@@ -14,15 +14,19 @@ import {
 } from '../dto/chat.dto'
 import { ChatResponseDto } from '../dto/response.dto'
 import { ChatParticipant } from '../types/chat.types'
-import { Chat, ChatType } from '@prisma/client'
+import { ChatType, NotificationType } from '@prisma/client'
 import { RedisService } from 'src/redis/redis.service'
+import { NotificationsService } from '../notifications/notifications.service'
 
 @Injectable()
 export class ChatService {
+	private logger: Logger = new Logger(ChatService.name)
+
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly userProfileService: UserProfileService,
 		private readonly redis: RedisService,
+		private readonly notificationsService: NotificationsService,
 	) {}
 
 	private getChatMessagesCacheKey(chatId: string) {
@@ -183,20 +187,43 @@ export class ChatService {
 			where: {
 				id: dto.chatId,
 			},
+			include: {
+				participants: {
+					select: { id: true },
+				},
+			},
 		})
 
 		if (!chat)
 			throw new NotFoundException(`Chat with id ${dto.chatId} not found`)
 
-		const message = await this.prisma.message.create({
-			data: {
-				chatId: chat.id,
-				senderId: userId,
-				content: dto.content,
-			},
-		})
+		const recipientIds = chat.participants
+			.map((p) => p.id)
+			.filter((id) => id !== userId)
 
-		return message
+		const notifications = await this.notificationsService.create(
+			recipientIds,
+			NotificationType.MESSAGE,
+		)
+
+		const notificationsMap = new Map(
+			notifications.map((notification) => [notification.userId, notification]),
+		)
+
+		try {
+			const message = await this.prisma.message.create({
+				data: {
+					chatId: chat.id,
+					senderId: userId,
+					content: dto.content,
+				},
+			})
+
+			return { message, notificationsMap, recipientIds }
+		} catch (error) {
+			this.logger.error('Failed to create message', error)
+			return { message: undefined, notificationsMap, recipientIds }
+		}
 	}
 
 	async createChat(

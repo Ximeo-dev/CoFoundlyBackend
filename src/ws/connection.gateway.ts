@@ -21,7 +21,7 @@ import { WebsocketService } from './websocket.service'
 export class ConnectionGateway
 	implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
-	private logger: Logger = new Logger('ConnectionGateway')
+	private logger: Logger = new Logger(ConnectionGateway.name)
 	@WebSocketServer() server: Server
 
 	constructor(
