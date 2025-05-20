@@ -2,6 +2,9 @@ export enum TwoFactorAction {
 	BIND = 'bind',
 	UNBIND = 'unbind',
 	RESET_PASSWORD = 'reset-password',
+	DELETE_ACCOUNT = 'delete-account',
+	DELETE_PROFILE = 'delete-profile',
+	DELETE_PROJECT = 'delete-project',
 }
 
 export enum TwoFactorHandleResult {

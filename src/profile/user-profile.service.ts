@@ -1,10 +1,14 @@
 import {
 	BadRequestException,
+	forwardRef,
+	Inject,
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common'
 import { instanceToPlain, plainToClass } from 'class-transformer'
+import { CACHE_TTL } from 'src/constants/constants'
 import { PrismaService } from 'src/prisma/prisma.service'
+import { RedisService } from 'src/redis/redis.service'
 import { calculateAge } from 'src/utils/calculate-age'
 import {
 	CreateUserProfileDto,
@@ -12,9 +16,9 @@ import {
 	UserProfileResponseDto,
 } from './dto/user-profile.dto'
 import { RelationService } from './relation.service'
-import { RedisService } from 'src/redis/redis.service'
-import { UserProfileFullExtended } from './types/profile.types'
-import { CACHE_TTL } from 'src/constants/constants'
+import { UserFullProfileExtended } from './types/profile.types'
+import { ImagesService } from 'src/images/images.service'
+import { AvatarType } from 'src/images/types/image.types'
 
 @Injectable()
 export class UserProfileService {
@@ -22,6 +26,8 @@ export class UserProfileService {
 		private readonly prisma: PrismaService,
 		private readonly relationService: RelationService,
 		private readonly redis: RedisService,
+		@Inject(forwardRef(() => ImagesService))
+		private readonly imagesService: ImagesService,
 	) {}
 
 	private getCacheKey(userId: string) {
@@ -30,11 +36,11 @@ export class UserProfileService {
 
 	async getUserProfile(userId: string) {
 		try {
-			const cachedProfile = await this.redis.getObject<UserProfileFullExtended>(
+			const cachedProfile = await this.redis.getObject<UserFullProfileExtended>(
 				this.getCacheKey(userId),
 			)
 
-			let profile: UserProfileFullExtended | null
+			let profile: UserFullProfileExtended | null
 
 			if (cachedProfile) {
 				profile = cachedProfile
@@ -56,7 +62,7 @@ export class UserProfileService {
 					)
 				}
 
-				await this.redis.setObject<UserProfileFullExtended>(
+				await this.redis.setObject<UserFullProfileExtended>(
 					this.getCacheKey(userId),
 					profile,
 					CACHE_TTL.USER_PROFILE,
@@ -81,12 +87,9 @@ export class UserProfileService {
 		const uniqueIds = Array.from(new Set(userIds))
 		const cacheKeys = uniqueIds.map((id) => this.getCacheKey(id))
 
-		console.log(cacheKeys)
-
 		const cachedProfiles = await this.redis.mget(cacheKeys)
 
-		console.log(cachedProfiles)
-		const profilesMap = new Map<string, UserProfileFullExtended>()
+		const profilesMap = new Map<string, UserFullProfileExtended>()
 
 		const missingIds: string[] = []
 		cachedProfiles.forEach((profile, index) => {
@@ -121,10 +124,7 @@ export class UserProfileService {
 		})
 	}
 
-	public prepareToResponse(
-		profile: any,
-		excludeBirthDate: boolean = true,
-	) {
+	public prepareToResponse(profile: any, excludeBirthDate: boolean = true) {
 		const age = profile.birthDate ? calculateAge(profile.birthDate) : null
 
 		const responseData = excludeBirthDate
@@ -196,7 +196,7 @@ export class UserProfileService {
 					industries: { select: { name: true } },
 				},
 			})
-			await this.redis.setObject<UserProfileFullExtended>(
+			await this.redis.setObject<UserFullProfileExtended>(
 				this.getCacheKey(userId),
 				profile,
 				CACHE_TTL.USER_PROFILE,
@@ -278,7 +278,7 @@ export class UserProfileService {
 					industries: { select: { name: true } },
 				},
 			})
-			await this.redis.setObject<UserProfileFullExtended>(
+			await this.redis.setObject<UserFullProfileExtended>(
 				this.getCacheKey(userId),
 				updatedProfile,
 				CACHE_TTL.USER_PROFILE,
@@ -299,6 +299,8 @@ export class UserProfileService {
 				where: { userId },
 			})
 			await this.redis.del(this.getCacheKey(userId))
+			await this.imagesService.deleteAvatar(userId, AvatarType.USER)
+			await this.setHasAvatar(userId, false)
 			return { userId, deleted: true }
 		} catch (error) {
 			if (error.code === 'P2025') {

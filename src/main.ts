@@ -2,11 +2,11 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import * as cookieParser from 'cookie-parser'
 import { NestExpressApplication } from '@nestjs/platform-express'
-import { getEnvVar } from './utils/env'
 import { ValidationPipe } from '@nestjs/common'
 import * as dotenv from 'dotenv'
 import * as dotenvExpand from 'dotenv-expand'
-import { CustomSocketIoAdapter } from './middlewares/custom-socket-adapter'
+import { ConfigService } from '@nestjs/config'
+import { CORS_ORIGIN_LIST } from './constants/constants'
 
 async function bootstrap() {
 	;(BigInt.prototype as any).toJSON = function () {
@@ -23,17 +23,18 @@ async function bootstrap() {
 	app.enableCors({
 		credentials: true,
 		exposedHeaders: 'set-cookie',
-		origin: ['http://localhost:3000', 'https://cofoundly.infinitum.su'],
+		origin: CORS_ORIGIN_LIST,
 	})
 
 	app.useGlobalPipes(
 		new ValidationPipe({
-			whitelist: true, // удаляет неизвестные поля
-			// forbidNonWhitelisted: true, // выбрасывает ошибку, если поле неизвестно
+			whitelist: true,
 			transform: true,
 		}),
 	)
 
-	await app.listen(getEnvVar('PORT'))
+	const config = app.get(ConfigService)
+
+	await app.listen(config.getOrThrow('PORT'))
 }
 bootstrap()

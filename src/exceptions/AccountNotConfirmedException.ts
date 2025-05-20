@@ -4,10 +4,9 @@ export class AccountNotConfirmedException extends HttpException {
 	constructor() {
 		super(
 			{
-				message:
-					'Аккаунт не является подтверждённым. Подтвердите адрес электронной почты',
+				message: 'Email not confirmed for this account',
 			},
-			HttpStatus.BAD_REQUEST,
+			HttpStatus.FORBIDDEN,
 		)
 	}
 }

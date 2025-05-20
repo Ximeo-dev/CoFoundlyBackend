@@ -4,9 +4,9 @@ export class EmailAlreadyConfirmedException extends HttpException {
 	constructor() {
 		super(
 			{
-				message: 'Адрес электронной почты уже подтверждён',
+				message: 'Email already confirmed',
 			},
-			HttpStatus.BAD_REQUEST
+			HttpStatus.BAD_REQUEST,
 		)
 	}
 }
