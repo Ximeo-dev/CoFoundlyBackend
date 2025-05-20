@@ -1,5 +1,4 @@
 import {
-	BadRequestException,
 	Controller,
 	HttpCode,
 	Post,
@@ -10,25 +9,18 @@ import { CurrentUser } from 'src/auth/decorators/user.decorator'
 import { Require2FA } from 'src/security/decorators/two-factor.decorator'
 import { TwoFactorGuard } from 'src/security/guards/two-factor.guard'
 import { TwoFactorAction } from 'src/security/types/two-factor.types'
-import { UserService } from 'src/user/user.service'
 import { TwoFactorService } from './two-factor.service'
+import { Confirmed } from './decorators/confirmed.decorator'
 
 @Controller('2fa')
 export class TwoFactorController {
-	constructor(
-		private readonly twoFactorService: TwoFactorService,
-		private readonly userService: UserService,
-	) {}
+	constructor(private readonly twoFactorService: TwoFactorService) {}
 
 	@HttpCode(200)
 	@Post('bind')
+	@Confirmed()
 	@Auth()
 	async getBind2FAToken(@CurrentUser('id') id: string) {
-		const securitySettings =
-			await this.userService.getUserSecuritySettingsById(id)
-
-		if (securitySettings?.twoFactorEnabled)
-			throw new BadRequestException('2FA уже подключена к вашему аккаунту')
 		return this.twoFactorService.issueBindToken(id)
 	}
 

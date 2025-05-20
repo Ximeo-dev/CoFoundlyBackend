@@ -1,5 +1,5 @@
 import { Industry, Language, Skill, UserProfile } from '@prisma/client'
-import { Entity } from 'src/entities/entities.service'
+import { Entity } from 'src/entities/types/entity.types'
 
 export type UserProfileExtended = {
 	skills: Skill[]
@@ -7,7 +7,7 @@ export type UserProfileExtended = {
 	industries: Industry[]
 } & { id: number; userId: string }
 
-export type UserProfileFullExtended = {
+export type UserFullProfileExtended = {
 	user: {
 		username: string
 		displayUsername: string

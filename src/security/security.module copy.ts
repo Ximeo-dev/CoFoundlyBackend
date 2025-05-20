@@ -11,14 +11,14 @@ import { WebsocketModule } from 'src/ws/websocket.module'
 
 @Module({
 	imports: [
-		UserModule,
-		forwardRef(() => TelegramModule),
-		MailModule,
 		AuthModule,
+		UserModule,
+		MailModule,
+		forwardRef(() => TelegramModule),
 		forwardRef(() => WebsocketModule),
 	],
 	controllers: [TwoFactorController, SecurityController],
 	providers: [TwoFactorService, SecurityService],
 	exports: [TwoFactorService, SecurityService],
 })
-export class SecurityModule {}
+export class SharedSecurityModule {}

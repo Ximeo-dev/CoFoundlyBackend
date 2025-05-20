@@ -8,6 +8,7 @@ import {
 	ParseUUIDPipe,
 	Patch,
 	Post,
+	UseGuards,
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
@@ -15,6 +16,9 @@ import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
 import { ProjectProfileService } from './project-profile.service'
 import { CreateProjectDto, UpdateProjectDto } from './dto/project-profile.dto'
+import { Require2FA } from 'src/security/decorators/two-factor.decorator'
+import { TwoFactorAction } from 'src/security/types/two-factor.types'
+import { TwoFactorGuard } from 'src/security/guards/two-factor.guard'
 
 @Controller('profile/project')
 export class ProjectProfileController {
@@ -63,6 +67,8 @@ export class ProjectProfileController {
 
 	@HttpCode(200)
 	@Delete(':projectId')
+	@Require2FA(TwoFactorAction.DELETE_PROJECT)
+	@UseGuards(TwoFactorGuard)
 	@Auth()
 	async deleteProject(
 		@CurrentUser('id') userId: string,

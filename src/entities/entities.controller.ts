@@ -14,9 +14,10 @@ import {
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { Roles } from 'src/auth/decorators/roles.decorator'
 import { RolesGuard } from 'src/auth/guards/roles.guard'
-import { EntitiesService, EntityType } from './entities.service'
+import { EntitiesService } from './entities.service'
 import { AutocompleteQueryParamsDto, EntityDto } from './dto/entities.dto'
 import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
+import { EntityType } from './types/entity.types'
 
 @Controller('entity')
 export class EntitiesController {

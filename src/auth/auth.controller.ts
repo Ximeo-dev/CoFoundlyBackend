@@ -35,11 +35,7 @@ export class AuthController {
 	async login(
 		@Body() dto: LoginDto,
 		@Res({ passthrough: true }) res: Response,
-		@Req() req: Request,
 	) {
-		// const forwarded = req.headers['x-forwarded-for'] as string
-		// const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip
-
 		const { refreshToken, ...response } = await this.authService.login(dto)
 		this.authService.addRefreshTokenToResponse(res, refreshToken)
 
@@ -52,11 +48,7 @@ export class AuthController {
 	async register(
 		@Body() dto: RegisterDto,
 		@Res({ passthrough: true }) res: Response,
-		@Req() req: Request,
 	) {
-		// const forwarded = req.headers['x-forwarded-for'] as string
-		// const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip
-
 		const { refreshToken, ...response } = await this.authService.register(dto)
 		this.authService.addRefreshTokenToResponse(res, refreshToken)
 
@@ -84,7 +76,6 @@ export class AuthController {
 
 		if (!refreshTokenFromCookies) {
 			this.authService.removeRefreshTokenFromResponse(res)
-			// throw new UnauthorizedException('Refresh token not passed')
 			return {
 				message: 'Refresh token not passed',
 			}

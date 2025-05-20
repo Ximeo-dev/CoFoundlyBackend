@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
-import { ProfileModule } from 'src/profile/profile.module'
+import { ProfileModule } from './profile/profile.module'
 import { AppController } from './app.controller'
 import { AuthModule } from './auth/auth.module'
 import { EntitiesModule } from './entities/entities.module'

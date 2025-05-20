@@ -5,7 +5,10 @@ const allowedUserIds: string[] = getEnvVar('DEV_BOT_ALLOWED_IDS')
 	.trim()
 	.split(',')
 
-export const onlyAllowedUsersMiddleware: Middleware = async (ctx: Context, next) => {
+export const onlyAllowedUsersMiddleware: Middleware = async (
+	ctx: Context,
+	next,
+) => {
 	const userId = ctx.from?.id.toString()
 
 	if (!userId || !allowedUserIds.includes(userId)) {

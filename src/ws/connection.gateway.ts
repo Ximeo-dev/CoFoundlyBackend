@@ -15,7 +15,6 @@ import { WebsocketService } from './websocket.service'
 
 @WebSocketGateway({
 	namespace: '/',
-	origin: ['http://localhost:3000', 'https://cofoundly.infinitum.su'],
 })
 @UseFilters(WsExceptionFilter)
 export class ConnectionGateway

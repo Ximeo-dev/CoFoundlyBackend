@@ -2,13 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { UserProfileExtended } from 'src/profile/types/profile.types'
 import { SwipeIntent } from './types/swipe.types'
 import { Skill } from '@prisma/client'
-
-const WEIGHTS = {
-	skills: 0.25,
-	industries: 0.25,
-	languages: 0.1,
-	experience: 0.1,
-} as const
+import { SWIPE_SCORE_WEIGHTS as WEIGHTS } from 'src/constants/constants'
 
 @Injectable()
 export class ComputingService {
@@ -34,24 +28,11 @@ export class ComputingService {
 			current.languages,
 			candidate.languages,
 		)
-		// const experienceScore = this.computeExperienceScore(
-		// 	current.experienceYears,
-		// 	candidate.experienceYears,
-		// )
-
-		// console.log(candidate.name)
-		// console.log(
-		// 	'Skill: %d\nIndustry: %d\nLanguage: %d',
-		// 	skillScore,
-		// 	industryOverlap,
-		// 	languageOverlap,
-		// )
 
 		const score =
 			skillScore * WEIGHTS.skills +
 			industryOverlap * WEIGHTS.industries +
 			languageOverlap * WEIGHTS.languages
-		// experienceScore * WEIGHTS.experience
 
 		return score
 	}
@@ -79,16 +60,5 @@ export class ComputingService {
 		}
 		const overlap = this.overlapScore(a, b)
 		return 1 - overlap
-	}
-
-	private computeExperienceScore(
-		currentExp: number,
-		candidateExp: number,
-		preference: string,
-	): number {
-		if (preference === 'mentorship' && currentExp < 3 && candidateExp > 5) {
-			return 1
-		}
-		return 0
 	}
 }

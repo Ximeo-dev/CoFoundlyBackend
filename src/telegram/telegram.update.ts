@@ -1,22 +1,22 @@
-import {
-	CallbackQuery,
-	Command,
-	InjectBot,
-	Start,
-	Update,
-} from '@grammyjs/nestjs'
+import { CallbackQuery, Command, Start, Update } from '@grammyjs/nestjs'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { Bot, CallbackQueryContext, CommandContext, Context } from 'grammy'
+import { Bot, CallbackQueryContext, Context } from 'grammy'
 import { TelegramService } from './telegram.service'
 import { parseCommandArgs } from 'src/utils/parse-command-args'
 import { getActionText } from './action-texts'
-import { TwoFactorAction, TwoFactorActionStatusEnum } from 'src/security/types/two-factor.types'
+import {
+	TwoFactorAction,
+	TwoFactorActionStatusEnum,
+} from 'src/security/types/two-factor.types'
 
 @Update()
 @Injectable()
 export class TelegramUpdate {
-	constructor(private readonly telegramService: TelegramService) {}
+	constructor(
+		private readonly telegramService: TelegramService,
+		private readonly configService: ConfigService,
+	) {}
 
 	@Start()
 	async onStart(ctx: Context) {
@@ -31,7 +31,24 @@ export class TelegramUpdate {
 		} else if (payload) {
 			await ctx.reply(`⚠️ Неизвестный параметр: ${payload}`)
 		} else {
-			await ctx.reply(`👋 Привет! Это телеграм бот CoFoundly`)
+			const web_app_url = this.configService.get<string>('FRONTEND_URL')
+			if (!web_app_url) {
+				return await ctx.reply(`👋 Привет! Это телеграм бот CoFoundly`)
+			}
+			await ctx.reply(`👋 Привет! Это телеграм бот CoFoundly`, {
+				reply_markup: {
+					inline_keyboard: [
+						[
+							{
+								text: 'Запустить CoFoundly',
+								web_app: {
+									url: `https://${web_app_url}`,
+								},
+							},
+						],
+					],
+				},
+			})
 		}
 	}
 
@@ -65,13 +82,69 @@ export class TelegramUpdate {
 	async onConfirmUnbind2FA(ctx: CallbackQueryContext<Context>) {
 		const userId = ctx.match[1]
 
-		await this.telegramService.handleTelegramUnbind(userId, ctx, TwoFactorActionStatusEnum.CONFIRMED)
+		await this.telegramService.handleTelegramUnbind(
+			userId,
+			ctx,
+			TwoFactorActionStatusEnum.CONFIRMED,
+		)
 	}
 
 	@CallbackQuery(/^2fa:unbind:reject:(.+)$/)
 	async onRejectUnbind2FA(ctx: CallbackQueryContext<Context>) {
 		const userId = ctx.match[1]
 
-		await this.telegramService.handleTelegramUnbind(userId, ctx, TwoFactorActionStatusEnum.REJECTED)
+		await this.telegramService.handleTelegramUnbind(
+			userId,
+			ctx,
+			TwoFactorActionStatusEnum.REJECTED,
+		)
+	}
+
+	@CallbackQuery(/^2fa:delete-project:confirm:(.+)$/)
+	async onConfirmDeleteProject(ctx: CallbackQueryContext<Context>) {
+		const userId = ctx.match[1]
+
+		await this.telegramService.handleAction(
+			ctx,
+			userId,
+			TwoFactorAction.DELETE_PROJECT,
+			TwoFactorActionStatusEnum.CONFIRMED,
+		)
+	}
+
+	@CallbackQuery(/^2fa:delete-project:reject:(.+)$/)
+	async onRejectDeleteProject(ctx: CallbackQueryContext<Context>) {
+		const userId = ctx.match[1]
+
+		await this.telegramService.handleAction(
+			ctx,
+			userId,
+			TwoFactorAction.DELETE_PROJECT,
+			TwoFactorActionStatusEnum.REJECTED,
+		)
+	}
+
+	@CallbackQuery(/^2fa:delete-profile:confirm:(.+)$/)
+	async onConfirmDeleteProfile(ctx: CallbackQueryContext<Context>) {
+		const userId = ctx.match[1]
+
+		await this.telegramService.handleAction(
+			ctx,
+			userId,
+			TwoFactorAction.DELETE_PROFILE,
+			TwoFactorActionStatusEnum.CONFIRMED,
+		)
+	}
+
+	@CallbackQuery(/^2fa:delete-profile:reject:(.+)$/)
+	async onRejectDeleteProfile(ctx: CallbackQueryContext<Context>) {
+		const userId = ctx.match[1]
+
+		await this.telegramService.handleAction(
+			ctx,
+			userId,
+			TwoFactorAction.DELETE_PROFILE,
+			TwoFactorActionStatusEnum.REJECTED,
+		)
 	}
 }

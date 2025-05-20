@@ -13,7 +13,7 @@ import {
 	MinLength,
 } from 'class-validator'
 import { subYears } from 'date-fns'
-import { Entity } from 'src/entities/entities.service'
+import { Entity } from 'src/entities/types/entity.types'
 import { Flatten } from 'src/utils/flatten-transformer'
 
 export class CreateUserProfileDto {

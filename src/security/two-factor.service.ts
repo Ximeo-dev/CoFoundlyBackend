@@ -1,10 +1,10 @@
 import {
+	BadRequestException,
 	forwardRef,
 	Inject,
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common'
-import { randomBytes } from 'crypto'
 import { GRACE_TTL, TTL_BY_2FA_ACTION } from 'src/constants/constants'
 import { RedisService } from 'src/redis/redis.service'
 import { TelegramService } from 'src/telegram/telegram.service'
@@ -45,6 +45,12 @@ export class TwoFactorService {
 	}
 
 	async issueBindToken(userId: string) {
+		const securitySettings =
+			await this.userService.getUserSecuritySettingsById(userId)
+
+		if (securitySettings?.twoFactorEnabled)
+			throw new BadRequestException('2FA уже подключена к вашему аккаунту')
+
 		const action = TwoFactorAction.BIND
 
 		const existing = await this.redis.get(this.bind2FAUserIdKey(userId))

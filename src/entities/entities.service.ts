@@ -7,22 +7,12 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service'
 import { RedisService } from 'src/redis/redis.service'
 import { EntityDto } from './dto/entities.dto'
-
-export interface Entity {
-	name: string
-}
-
-export enum EntityType {
-	JOB = 'job',
-	SKILL = 'skill',
-	LANGUAGE = 'language',
-	INDUSTRY = 'industry',
-}
+import { Entity, EntityType } from './types/entity.types'
+import { CACHE_TTL } from 'src/constants/constants'
 
 @Injectable()
 export class EntitiesService {
-	private readonly logger = new Logger(EntitiesService.name)
-	private readonly CACHE_TTL = 300
+	private logger: Logger = new Logger(EntitiesService.name)
 	private readonly MAX_LIMIT = 40
 
 	constructor(
@@ -77,7 +67,7 @@ export class EntitiesService {
 		if (!entities) {
 			entities = await this.getAll(entity)
 			try {
-				await this.redis.setObject(cacheKey, entities, this.CACHE_TTL)
+				await this.redis.setObject(cacheKey, entities, CACHE_TTL.ENTITY)
 			} catch (error) {
 				this.logger.error(`Failed to cache entities to Redis: ${error.message}`)
 			}
@@ -115,7 +105,7 @@ export class EntitiesService {
 				const entities = await this.redis.getObject<Entity[]>(cacheKey)
 				if (entities) {
 					entities.push(createdEntity)
-					await this.redis.setObject(cacheKey, entities, this.CACHE_TTL)
+					await this.redis.setObject(cacheKey, entities, CACHE_TTL.ENTITY)
 				}
 			} catch (error) {
 				this.logger.error(
@@ -155,7 +145,11 @@ export class EntitiesService {
 				const entities = await this.redis.getObject<Entity[]>(cacheKey)
 				if (entities) {
 					const updatedEntities = entities.filter((e) => e.name !== entityName)
-					await this.redis.setObject(cacheKey, updatedEntities, this.CACHE_TTL)
+					await this.redis.setObject(
+						cacheKey,
+						updatedEntities,
+						CACHE_TTL.ENTITY,
+					)
 				}
 			} catch (error) {
 				this.logger.error(

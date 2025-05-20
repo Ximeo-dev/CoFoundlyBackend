@@ -14,7 +14,7 @@ import { SecurityModule } from 'src/security/security.module'
 			imports: [ConfigModule],
 			inject: [ConfigService],
 			useFactory: getTelegramConfig,
-		})
+		}),
 	],
 	providers: [TelegramUpdate, TelegramService],
 	exports: [TelegramService],

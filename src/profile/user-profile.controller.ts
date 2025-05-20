@@ -8,6 +8,7 @@ import {
 	ParseUUIDPipe,
 	Patch,
 	Post,
+	UseGuards,
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
@@ -18,6 +19,9 @@ import {
 	UpdateUserProfileDto,
 } from './dto/user-profile.dto'
 import { UserProfileService } from './user-profile.service'
+import { Require2FA } from 'src/security/decorators/two-factor.decorator'
+import { TwoFactorGuard } from 'src/security/guards/two-factor.guard'
+import { TwoFactorAction } from 'src/security/types/two-factor.types'
 
 @Controller('profile/user')
 export class UserProfileController {
@@ -59,6 +63,8 @@ export class UserProfileController {
 
 	@HttpCode(200)
 	@Delete()
+	@Require2FA(TwoFactorAction.DELETE_PROFILE)
+	@UseGuards(TwoFactorGuard)
 	@Auth()
 	async deleteProfile(@CurrentUser('id') id: string) {
 		return this.userProfileService.deleteUserProfile(id)

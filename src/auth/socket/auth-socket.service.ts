@@ -5,12 +5,17 @@ import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
 import { AuthenticatedSocket } from 'src/ws/types/socket.types'
 
+interface TokenPayload {
+	id: string
+	version: number
+}
+
 @Injectable()
 export class AuthSocketService {
 	constructor(
-		private jwtService: JwtService,
-		private configService: ConfigService,
-		private userService: UserService,
+		private readonly jwtService: JwtService,
+		private readonly configService: ConfigService,
+		private readonly userService: UserService,
 	) {}
 
 	async attachUserToSocket(client: AuthenticatedSocket) {
@@ -24,8 +29,8 @@ export class AuthSocketService {
 		}
 
 		try {
-			const payload = this.jwtService.verify(token, {
-				secret: this.configService.getOrThrow('JWT_SECRET'),
+			const payload = this.jwtService.verify<TokenPayload>(token, {
+				secret: this.configService.getOrThrow<string>('JWT_SECRET'),
 			})
 			const user = await this.userService.getByIdWithSecuritySettings(
 				payload.id,

@@ -15,16 +15,24 @@ import * as zxcvbn from 'zxcvbn'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { WebsocketService } from 'src/ws/websocket.service'
+import {
+	ACCESS_TOKEN_TTL,
+	REFRESH_TOKEN_EXPIRE_DAYS,
+	REFRESH_TOKEN_TTL,
+} from 'src/constants/constants'
+import { ConfigService } from '@nestjs/config'
+
+type SameSiteType = 'lax' | 'strict' | 'none'
 
 @Injectable()
 export class AuthService {
-	private EXPIRE_DAY_REFRESH_TOKEN = 3
 	public REFRESH_TOKEN_NAME = 'refreshToken'
 
 	constructor(
 		private readonly jwt: JwtService,
 		private readonly userService: UserService,
 		private readonly websocketService: WebsocketService,
+		private readonly configService: ConfigService,
 	) {}
 
 	async login(dto: LoginDto) {
@@ -53,11 +61,11 @@ export class AuthService {
 		const data = { id: userId, version: tokenVersion }
 
 		const accessToken = this.jwt.sign(data, {
-			expiresIn: '3h',
+			expiresIn: ACCESS_TOKEN_TTL,
 		})
 
 		const refreshToken = this.jwt.sign(data, {
-			expiresIn: '3d',
+			expiresIn: REFRESH_TOKEN_TTL,
 		})
 
 		return { accessToken, refreshToken }
@@ -121,41 +129,49 @@ export class AuthService {
 
 	addRefreshTokenToResponse(res: Response, refreshToken: string) {
 		const expiresIn = new Date()
-		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
+		expiresIn.setDate(expiresIn.getDate() + REFRESH_TOKEN_EXPIRE_DAYS)
 
 		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
 			httpOnly: true,
 			expires: expiresIn,
-			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
-			domain: getEnvVar('DOMAIN'),
-			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
+			secure: parseBool(
+				this.configService.getOrThrow<string>('SECURE_REFRESH_TOKEN'),
+			),
+			domain: this.configService.getOrThrow<string>('DOMAIN'),
+			sameSite: this.configService.getOrThrow<SameSiteType>('SAME_SITE'),
 		})
 
 		//Для фронта на localhost
 		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
 			httpOnly: true,
 			expires: expiresIn,
-			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
+			secure: parseBool(
+				this.configService.getOrThrow<string>('SECURE_REFRESH_TOKEN'),
+			),
 			domain: 'localhost',
-			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
+			sameSite: this.configService.getOrThrow<SameSiteType>('SAME_SITE'),
 		})
 	}
 
 	removeRefreshTokenFromResponse(res: Response) {
 		res.cookie(this.REFRESH_TOKEN_NAME, '', {
 			httpOnly: true,
-			domain: getEnvVar('DOMAIN'),
 			expires: new Date(0),
-			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
-			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
+			secure: parseBool(
+				this.configService.getOrThrow<string>('SECURE_REFRESH_TOKEN'),
+			),
+			domain: this.configService.getOrThrow<string>('DOMAIN'),
+			sameSite: this.configService.getOrThrow<SameSiteType>('SAME_SITE'),
 		})
 		//Для фронта на localhost
 		res.cookie(this.REFRESH_TOKEN_NAME, '', {
 			httpOnly: true,
-			domain: 'localhost',
 			expires: new Date(0),
-			secure: parseBool(getEnvVar('SECURE_REFRESH_TOKEN')),
-			sameSite: getEnvVar('SAME_SITE') as 'lax' | 'strict' | 'none',
+			secure: parseBool(
+				this.configService.getOrThrow<string>('SECURE_REFRESH_TOKEN'),
+			),
+			domain: 'localhost',
+			sameSite: this.configService.getOrThrow<SameSiteType>('SAME_SITE'),
 		})
 	}
 
