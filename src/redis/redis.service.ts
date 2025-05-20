@@ -36,7 +36,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	async mget(keys: string[]): Promise<(string | null)[]> {
-		if (!keys) return []
+		if (!keys.length) return []
 		return this.client.mget(keys)
 	}
 
