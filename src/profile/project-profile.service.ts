@@ -2,6 +2,7 @@ import {
 	BadRequestException,
 	ForbiddenException,
 	Injectable,
+	Logger,
 	NotFoundException,
 } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
@@ -16,6 +17,8 @@ import { USER_PROJECTS_LIMIT } from 'src/constants/constants'
 
 @Injectable()
 export class ProjectProfileService {
+	private logger: Logger = new Logger(ProjectProfileService.name)
+
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly relationService: RelationService,
@@ -58,16 +61,10 @@ export class ProjectProfileService {
 				},
 			})
 
-			if (!projects) {
-				throw new NotFoundException(`User ${userId} doesn't have projects`)
-			}
-
 			return this.prepareToResponse(projects)
 		} catch (error) {
-			if (error instanceof NotFoundException) {
-				throw error
-			}
-			throw new BadRequestException('Failed to retrieve profile')
+			this.logger.error('Get user projects error', error)
+			throw new BadRequestException('Failed to retrieve projects')
 		}
 	}
 
@@ -122,7 +119,8 @@ export class ProjectProfileService {
 			where: { userId },
 		})
 
-		if (!userProfile) throw new BadRequestException('User must have profile for join project')
+		if (!userProfile)
+			throw new BadRequestException('User must have profile for join project')
 	}
 
 	async createProject(userId: string, dto: CreateProjectDto) {

@@ -81,7 +81,11 @@ export class UserProfileService {
 		const uniqueIds = Array.from(new Set(userIds))
 		const cacheKeys = uniqueIds.map((id) => this.getCacheKey(id))
 
+		console.log(cacheKeys)
+
 		const cachedProfiles = await this.redis.mget(cacheKeys)
+
+		console.log(cachedProfiles)
 		const profilesMap = new Map<string, UserProfileFullExtended>()
 
 		const missingIds: string[] = []
