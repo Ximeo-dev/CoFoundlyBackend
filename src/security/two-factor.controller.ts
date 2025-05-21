@@ -1,4 +1,11 @@
-import { Controller, HttpCode, Post, UseGuards } from '@nestjs/common'
+import {
+	Controller,
+	Get,
+	HttpCode,
+	Post,
+	Query,
+	UseGuards,
+} from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
 import { Require2FA } from 'src/security/decorators/two-factor.decorator'
@@ -11,7 +18,9 @@ import {
 	ApiForbiddenResponse,
 	ApiOkResponse,
 	ApiOperation,
+	ApiQuery,
 } from '@nestjs/swagger'
+import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
 
 @Controller('2fa')
 @ApiBearerAuth()
@@ -41,5 +50,18 @@ export class TwoFactorController {
 	@Auth()
 	async unbind2FA(@CurrentUser('id') id: string) {
 		return this.twoFactorService.unbind2FA(id)
+	}
+
+	@ApiOperation({ summary: 'Get 2FA action status' })
+	@ApiOkResponse({ description: 'Status of 2FA action', example: 'confirmed' })
+	@ApiQuery({ name: 'action', enum: TwoFactorAction })
+	@Get('status')
+	@Auth()
+	async getActionStatus(
+		@CurrentUser('id') id: string,
+		@Query('action', new EnumValidationPipe(TwoFactorAction))
+		action: TwoFactorAction,
+	) {
+		return this.twoFactorService.getActionStatus(id, action)
 	}
 }
