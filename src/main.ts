@@ -7,6 +7,7 @@ import * as dotenv from 'dotenv'
 import * as dotenvExpand from 'dotenv-expand'
 import { ConfigService } from '@nestjs/config'
 import { CORS_ORIGIN_LIST } from './constants/constants'
+import helmet from 'helmet'
 
 async function bootstrap() {
 	;(BigInt.prototype as any).toJSON = function () {
@@ -17,6 +18,7 @@ async function bootstrap() {
 	dotenvExpand.expand(myEnv)
 
 	const app = await NestFactory.create<NestExpressApplication>(AppModule)
+	const config = app.get(ConfigService)
 
 	app.disable('x-powered-by', 'X-Powered-By')
 	app.use(cookieParser())
@@ -33,7 +35,42 @@ async function bootstrap() {
 		}),
 	)
 
-	const config = app.get(ConfigService)
+	app.use(
+		helmet({
+			contentSecurityPolicy: {
+				useDefaults: true,
+				directives: {
+					defaultSrc: ["'self'"],
+					scriptSrc: ["'self'"],
+					imgSrc: ["'self'", 'data:', 'blob:'],
+					connectSrc: [
+						"'self'",
+						`wss://${config.getOrThrow<string>('API_URL')}`,
+						`https://${config.getOrThrow<string>('API_URL')}`,
+					],
+					frameAncestors: ["'none'"],
+					objectSrc: ["'none'"],
+					upgradeInsecureRequests: [],
+				},
+			},
+
+			referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+			crossOriginEmbedderPolicy: false,
+			crossOriginResourcePolicy: { policy: 'same-site' },
+			dnsPrefetchControl: { allow: true },
+			frameguard: { action: 'deny' },
+			hidePoweredBy: true,
+			hsts: {
+				maxAge: 63072000, // 2 года
+				includeSubDomains: true,
+				preload: true,
+			},
+			ieNoOpen: true,
+			noSniff: true,
+			permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+			xssFilter: true,
+		}),
+	)
 
 	await app.listen(config.getOrThrow('PORT'))
 }
