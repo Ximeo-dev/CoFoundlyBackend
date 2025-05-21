@@ -15,8 +15,10 @@ import { SwipeIntent } from './types/swipe.types'
 import { SwipeDto } from './dto/swipe.dto'
 import { Roles } from 'src/auth/decorators/roles.decorator'
 import { RolesGuard } from 'src/auth/guards/roles.guard'
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
 
 @Controller('swipe')
+@UseGuards(ThrottlerGuard)
 export class SwipeController {
 	constructor(private readonly swipeService: SwipeService) {}
 
@@ -32,6 +34,7 @@ export class SwipeController {
 	@HttpCode(200)
 	@Post()
 	@Auth()
+	@Throttle({ default: { limit: 2, ttl: 1000 } })
 	async handleSwipe(@CurrentUser('id') id: string, @Body() dto: SwipeDto) {
 		return this.swipeService.handleSwipe(id, dto.toUserId, dto.action)
 	}
