@@ -29,6 +29,7 @@ import {
 	ApiResponse,
 } from '@nestjs/swagger'
 import { FRONTEND_REDIRECT_LINK } from 'src/constants/constants'
+import { Throttle } from '@nestjs/throttler'
 
 @Controller('security')
 export class SecurityController {
@@ -90,6 +91,7 @@ export class SecurityController {
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@Post('change-email')
+	@Throttle({ default: { limit: 2, ttl: 10000 } })
 	@Auth()
 	async changeEmail(
 		@CurrentUser('id') id: string,
@@ -130,10 +132,10 @@ export class SecurityController {
 			},
 		},
 	})
-	@ApiNotFoundResponse({ description: 'User not found' })
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('reset-password')
+	@Throttle({ default: { limit: 2, ttl: 10000 } })
 	async resetPasswordRequest(@Body() dto: ResetPasswordRequestDto) {
 		await this.securityService.sendEmailResetPassword(dto.email)
 		return { message: 'Письмо с подтверждением отправлено' }
