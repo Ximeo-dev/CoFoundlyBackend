@@ -2,6 +2,7 @@ import {
 	BadRequestException,
 	Injectable,
 	InternalServerErrorException,
+	Logger,
 	NotFoundException,
 } from '@nestjs/common'
 import { randomBytes } from 'crypto'
@@ -30,6 +31,8 @@ import { WebsocketService } from 'src/ws/websocket.service'
 
 @Injectable()
 export class SecurityService {
+	private logger: Logger = new Logger(SecurityService.name)
+
 	constructor(
 		private readonly userService: UserService,
 		private readonly redis: RedisService,
@@ -154,27 +157,31 @@ export class SecurityService {
 	}
 
 	async sendEmailResetPassword(email: string) {
-		const user = await this.userService.getByEmail(email)
-		if (!user) throw new NotFoundException('User not found')
+		try {
+			const user = await this.userService.getByEmail(email)
+			if (!user) return
 
-		const token = await this.issueActionEmailToken(
-			user.id,
-			SecurityAction.RESET_PASSWORD,
-		)
-		const confirmationUrl = `${FRONTEND_RESET_PASSWORD}?userId=${user.id}&token=${token}`
+			const token = await this.issueActionEmailToken(
+				user.id,
+				SecurityAction.RESET_PASSWORD,
+			)
+			const confirmationUrl = `${FRONTEND_RESET_PASSWORD}?userId=${user.id}&token=${token}`
 
-		const context = { email: user.email, confirmationUrl }
-		const template = await getHtmlTemplate(
-			MAIL_MESSAGES_FILE_PATHS.RESET_PASSWORD_CONFIRMATION,
-		)
-		if (!template)
-			throw new InternalServerErrorException('Error loading email template')
+			const context = { email: user.email, confirmationUrl }
+			const template = await getHtmlTemplate(
+				MAIL_MESSAGES_FILE_PATHS.RESET_PASSWORD_CONFIRMATION,
+			)
+			if (!template)
+				throw new InternalServerErrorException('Error loading email template')
 
-		this.mailService.sendMail(
-			user.email,
-			'Подтверждение восстановления пароля',
-			compile(template)(context),
-		)
+			this.mailService.sendMail(
+				user.email,
+				'Подтверждение восстановления пароля',
+				compile(template)(context),
+			)
+		} catch (error) {
+			this.logger.error('Reset password sending error:', error)
+		}
 	}
 
 	async confirmResetPassword(

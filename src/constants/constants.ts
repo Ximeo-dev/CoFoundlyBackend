@@ -53,6 +53,6 @@ export const CORS_ORIGIN_LIST = [
 ]
 
 export const FRONTEND_REDIRECT_LINK = `http://${getEnvVar('FRONTEND_URL')}`
-export const FRONTEND_RESET_PASSWORD = `${FRONTEND_REDIRECT_LINK}/reset-password`
+export const FRONTEND_RESET_PASSWORD = `${FRONTEND_REDIRECT_LINK}/reset-password/confirm`
 
 export const API_URL = `http://${getEnvVar('API_URL')}`
