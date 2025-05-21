@@ -303,7 +303,7 @@ export class ChatService {
 
 		return this.prisma.message.findMany({
 			where: { chatId },
-			orderBy: { sentAt: 'asc' },
+			orderBy: { sentAt: 'desc' },
 			skip: (page - 1) * limit,
 			take: limit,
 			include: {
