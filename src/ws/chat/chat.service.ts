@@ -331,7 +331,7 @@ export class ChatService {
 		})
 
 		const newReceipts = messagesWithReceipts
-			.filter((msg) => msg.senderId !== userId && !msg.readReceipt)
+			.filter((msg) => msg.senderId !== userId && !msg.readReceipt.length)
 			.map((msg) => ({
 				messageId: msg.id,
 				userId,
