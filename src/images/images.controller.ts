@@ -18,19 +18,24 @@ import { ImageValidationPipe } from 'src/pipes/image-validation-pipe'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { Response } from 'express'
 import { ImagesService } from './images.service'
-import { AVATAR_SIZES } from 'src/constants/constants'
+import { AVATAR_SIZES, MAX_AVATAR_FILESIZE } from 'src/constants/constants'
 import { AvatarType } from './types/image.types'
 import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
 
 @Controller('images')
 export class ImagesController {
+	private readonly responseHeaders = {
+		'Content-Type': 'image/webp',
+		'Cache-Control': 'public, max-age=31536000',
+	}
+
 	constructor(private readonly imagesService: ImagesService) {}
 
 	@HttpCode(200)
 	@Post('avatar/user')
 	@UseInterceptors(
 		FileInterceptor('avatar', {
-			limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
+			limits: { fileSize: MAX_AVATAR_FILESIZE + 1024 * 1024 }, // +1MB
 		}),
 	)
 	@Auth()
@@ -50,10 +55,7 @@ export class ImagesController {
 			AvatarType.USER,
 		)
 
-		res.set({
-			'Content-Type': 'image/webp',
-			'Cache-Control': 'public, max-age=31536000',
-		})
+		res.set(this.responseHeaders)
 
 		stream.pipe(res)
 	}
@@ -62,7 +64,7 @@ export class ImagesController {
 	@Post('avatar/project/:id')
 	@UseInterceptors(
 		FileInterceptor('avatar', {
-			limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
+			limits: { fileSize: MAX_AVATAR_FILESIZE + 1024 * 1024 }, // +1MB
 		}),
 	)
 	@Auth()
@@ -82,10 +84,7 @@ export class ImagesController {
 			AvatarType.PROJECT,
 		)
 
-		res.set({
-			'Content-Type': 'image/webp',
-			'Cache-Control': 'public, max-age=31536000',
-		})
+		res.set(this.responseHeaders)
 
 		stream.pipe(res)
 	}
@@ -115,16 +114,13 @@ export class ImagesController {
 	) {
 		if (!AVATAR_SIZES.includes(size)) {
 			throw new BadRequestException(
-				'Неверный размер. Допустимые значения: 64, 128, 512',
+				`Invalid avatar size. Allowed values: ${AVATAR_SIZES.join(', ')}`,
 			)
 		}
 
 		const stream = await this.imagesService.getAvatar(id, size, type)
 
-		res.set({
-			'Content-Type': 'image/webp',
-			'Cache-Control': 'public, max-age=31536000',
-		})
+		res.set(this.responseHeaders)
 
 		stream.pipe(res)
 	}

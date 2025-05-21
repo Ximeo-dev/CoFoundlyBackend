@@ -67,6 +67,7 @@ export class TelegramService {
 	) {
 		const actionText = getActionText(action, 'pending', {
 			email: user.email,
+			displayUsername: user.displayUsername,
 			ip,
 		})
 
@@ -156,5 +157,17 @@ export class TelegramService {
 		return ctx.editMessageText(
 			getActionText(TwoFactorAction.UNBIND, 'confirmed', {}),
 		)
+	}
+
+	async handleAction(
+		ctx: Context,
+		userId: string,
+		action: TwoFactorAction,
+		type:
+			| TwoFactorActionStatusEnum.CONFIRMED
+			| TwoFactorActionStatusEnum.REJECTED,
+	) {
+		await this.twoFactorService.confirmAction(userId, action, type)
+		return ctx.editMessageText(getActionText(action, type, {}))
 	}
 }

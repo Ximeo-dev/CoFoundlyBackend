@@ -12,7 +12,11 @@ import { NotificationsController } from './notifications/notifications.controlle
 import { NotificationsService } from './notifications/notifications.service'
 
 @Module({
-	imports: [UserModule, forwardRef(() => AuthModule), ProfileModule],
+	imports: [
+		UserModule,
+		forwardRef(() => AuthModule),
+		forwardRef(() => ProfileModule),
+	],
 	providers: [
 		WebsocketService,
 		ConnectionGateway,

@@ -1,8 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-import { Socket } from 'socket.io'
+import { hasSecuritySettings } from 'src/user/types/user.guards'
 import { UserService } from 'src/user/user.service'
+import { AuthenticatedSocket } from 'src/ws/types/socket.types'
 
 @Injectable()
 export class WSAuthGuard implements CanActivate {
@@ -13,14 +14,14 @@ export class WSAuthGuard implements CanActivate {
 	) {}
 
 	async canActivate(context: ExecutionContext) {
-		const client: Socket = context.switchToWs().getClient()
+		const client: AuthenticatedSocket = context.switchToWs().getClient()
 		const token =
 			client.handshake.auth?.token ||
 			client.handshake.query?.token ||
 			client.handshake.headers?.authorization?.split(' ')[1]
 
 		if (!token) {
-			client.emit('auth_error', 'Missing token')
+			client.emit('errors', 'Missing token')
 			client.disconnect()
 			return false
 		}
@@ -33,16 +34,20 @@ export class WSAuthGuard implements CanActivate {
 			const user = await this.userService.getByIdWithSecuritySettings(
 				payload.id,
 			)
-			if (!user || user.securitySettings?.jwtTokenVersion !== payload.version) {
-				client.emit('auth_error', 'Invalid or expired token')
+			if (
+				!user ||
+				!hasSecuritySettings(user) ||
+				user.securitySettings.jwtTokenVersion !== payload.version
+			) {
+				client.emit('errors', 'Invalid or expired token')
 				client.disconnect()
 				return false
 			}
 
-			;(client as any).user = user
+			client.user = user
 			return true
 		} catch (err) {
-			client.emit('auth_error', 'Unauthorized WebSocket access')
+			client.emit('errors', 'Unauthorized WebSocket access')
 			client.disconnect()
 			return false
 		}

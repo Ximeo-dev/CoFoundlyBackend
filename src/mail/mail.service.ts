@@ -14,8 +14,8 @@ export class MailService {
 		this.emailUser = configService.getOrThrow<string>('EMAIL_USER')
 		this.transporter = nodemailer.createTransport({
 			host: configService.getOrThrow<string>('EMAIL_HOST'),
-			port: parseInt(configService.getOrThrow('EMAIL_PORT')),
-			secure: parseBool(configService.getOrThrow('EMAIL_SECURE')),
+			port: parseInt(configService.getOrThrow<string>('EMAIL_PORT')),
+			secure: parseBool(configService.getOrThrow<string>('EMAIL_SECURE')),
 			auth: {
 				user: this.emailUser,
 				pass: configService.getOrThrow<string>('EMAIL_PASS'),

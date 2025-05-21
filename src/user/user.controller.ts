@@ -22,12 +22,11 @@ export class UserController {
 		return this.userService.getUserData(id)
 	}
 
-	// Отложено до нормальной 2FA
-	@Delete()
-	@Auth()
-	async deleteUser(@CurrentUser('id') id: string) {
-		return this.userService.delete(id)
-	}
+	// @Delete()
+	// @Auth()
+	// async deleteUser(@CurrentUser('id') id: string) {
+	// 	return this.userService.delete(id)
+	// }
 
 	@UsePipes(new ValidationPipe())
 	@Patch()

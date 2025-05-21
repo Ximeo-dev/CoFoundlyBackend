@@ -1,17 +1,14 @@
 import { PartialType } from '@nestjs/mapped-types'
-import { Exclude, Expose, Type } from 'class-transformer'
+import { Expose } from 'class-transformer'
 import {
 	IsString,
 	IsNotEmpty,
-	IsDate,
-	MaxDate,
 	MinLength,
 	MaxLength,
 	IsArray,
 	ArrayMaxSize,
-	IsUrl,
 } from 'class-validator'
-import { Entity } from 'src/entities/entities.service'
+import { Entity } from 'src/entities/types/entity.types'
 import { Flatten } from 'src/utils/flatten-transformer'
 
 export class CreateProjectDto {

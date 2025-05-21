@@ -7,6 +7,7 @@ import {
 	Query,
 	Req,
 	Res,
+	UseGuards,
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common'
@@ -21,8 +22,10 @@ import {
 } from './dto/register.dto'
 import { Auth } from './decorators/auth.decorator'
 import { CurrentUser } from './decorators/user.decorator'
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
 
 @Controller('auth')
+@UseGuards(ThrottlerGuard)
 export class AuthController {
 	constructor(
 		private readonly authService: AuthService,
@@ -32,14 +35,11 @@ export class AuthController {
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('login')
+	@Throttle({ default: { limit: 4, ttl: 10000 } })
 	async login(
 		@Body() dto: LoginDto,
 		@Res({ passthrough: true }) res: Response,
-		@Req() req: Request,
 	) {
-		// const forwarded = req.headers['x-forwarded-for'] as string
-		// const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip
-
 		const { refreshToken, ...response } = await this.authService.login(dto)
 		this.authService.addRefreshTokenToResponse(res, refreshToken)
 
@@ -49,14 +49,11 @@ export class AuthController {
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('register')
+	@Throttle({ default: { limit: 2, ttl: 10000 } })
 	async register(
 		@Body() dto: RegisterDto,
 		@Res({ passthrough: true }) res: Response,
-		@Req() req: Request,
 	) {
-		// const forwarded = req.headers['x-forwarded-for'] as string
-		// const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip
-
 		const { refreshToken, ...response } = await this.authService.register(dto)
 		this.authService.addRefreshTokenToResponse(res, refreshToken)
 
@@ -84,7 +81,6 @@ export class AuthController {
 
 		if (!refreshTokenFromCookies) {
 			this.authService.removeRefreshTokenFromResponse(res)
-			// throw new UnauthorizedException('Refresh token not passed')
 			return {
 				message: 'Refresh token not passed',
 			}

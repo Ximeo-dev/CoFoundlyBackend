@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
-import { ProfileModule } from 'src/profile/profile.module'
+import { ProfileModule } from './profile/profile.module'
 import { AppController } from './app.controller'
 import { AuthModule } from './auth/auth.module'
 import { EntitiesModule } from './entities/entities.module'
@@ -14,11 +14,15 @@ import { SwipeModule } from './swipe/swipe.module'
 import { TelegramModule } from './telegram/telegram.module'
 import { UserModule } from './user/user.module'
 import { WebsocketModule } from './ws/websocket.module'
+import { ThrottlerModule } from '@nestjs/throttler'
 
 @Module({
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
+		}),
+		ThrottlerModule.forRoot({
+			throttlers: [{ ttl: 1, limit: 0 }],
 		}),
 		UserModule,
 		AuthModule,

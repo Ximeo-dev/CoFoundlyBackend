@@ -1,8 +1,6 @@
 import {
 	Controller,
 	Get,
-	Param,
-	ParseUUIDPipe,
 	Query,
 	UsePipes,
 	ValidationPipe,

@@ -1,6 +1,8 @@
 import {
 	BadRequestException,
 	ForbiddenException,
+	forwardRef,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -14,6 +16,8 @@ import {
 } from './dto/project-profile.dto'
 import { instanceToPlain, plainToClass } from 'class-transformer'
 import { USER_PROJECTS_LIMIT } from 'src/constants/constants'
+import { ImagesService } from 'src/images/images.service'
+import { AvatarType } from 'src/images/types/image.types'
 
 @Injectable()
 export class ProjectProfileService {
@@ -22,6 +26,8 @@ export class ProjectProfileService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly relationService: RelationService,
+		@Inject(forwardRef(() => ImagesService))
+		private readonly imagesService: ImagesService,
 	) {}
 
 	async getUserProjects(userId: string) {
@@ -312,6 +318,8 @@ export class ProjectProfileService {
 		await this.prisma.project.delete({
 			where: { id: projectId },
 		})
+		await this.imagesService.deleteAvatar(projectId, AvatarType.PROJECT)
+		await this.setHasAvatar(projectId, false)
 		return { projectId, deleted: true }
 	}
 
