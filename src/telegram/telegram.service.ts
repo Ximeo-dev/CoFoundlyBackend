@@ -25,17 +25,17 @@ export class TelegramService {
 			bot.use(onlyAllowedUsersMiddleware)
 		}
 
-		// bot.api
-		// 	.setMyCommands([
-		// 		{ command: 'start', description: 'Запустить бота' },
-		// 		{
-		// 			command: '2fa',
-		// 			description: 'Привязать 2FA к аккаунту. Использование: /2fa <token>',
-		// 		},
-		// 	])
-		// 	.catch((err) => {
-		// 		console.error('Ошибка установки команд Telegram:', err)
-		// 	})
+		bot.api
+			.setMyCommands([
+				{ command: 'start', description: 'Запустить бота' },
+				{
+					command: '2fa',
+					description: 'Привязать 2FA к аккаунту. Использование: /2fa <token>',
+				},
+			])
+			.catch((err) => {
+				console.error('Ошибка установки команд Telegram:', err)
+			})
 	}
 
 	public get2FAKey(userId: string, action: string, type: 'confirm' | 'reject') {
