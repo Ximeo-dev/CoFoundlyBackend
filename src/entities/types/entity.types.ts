@@ -1,4 +1,7 @@
-export interface Entity {
+import { ApiProperty } from '@nestjs/swagger'
+
+export class Entity {
+	@ApiProperty()
 	name: string
 }
 

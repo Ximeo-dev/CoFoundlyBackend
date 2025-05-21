@@ -82,7 +82,7 @@ export class AuthService {
 
 		const isValid = await verify(securitySettings.passwordHash, dto.password)
 
-		if (!isValid) throw new UnauthorizedException('Неверный логин или пароль')
+		if (!isValid) throw new UnauthorizedException('Неверный email или пароль')
 
 		return {
 			userData,

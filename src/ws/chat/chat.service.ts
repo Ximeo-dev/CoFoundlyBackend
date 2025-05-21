@@ -12,8 +12,7 @@ import {
 	MessageEditDto,
 	SendMessageDto,
 } from '../dto/chat.dto'
-import { ChatResponseDto } from '../dto/response.dto'
-import { ChatParticipant } from '../types/chat.types'
+import { ChatParticipant, ChatResponseDto } from '../dto/response.dto'
 import { ChatType, NotificationType } from '@prisma/client'
 import { RedisService } from 'src/redis/redis.service'
 import { NotificationsService } from '../notifications/notifications.service'

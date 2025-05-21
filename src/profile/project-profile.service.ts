@@ -99,7 +99,7 @@ export class ProjectProfileService {
 				},
 			},
 		})
-		return this.prepareToResponse(project)
+		return this.prepareToResponse(project, true)
 	}
 
 	public prepareToResponse(project: any, excludeOwner: boolean = false) {
