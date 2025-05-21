@@ -1,20 +1,5 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
-
-export class UpdateUserDto {
-	@IsOptional()
-	@IsString()
-	@Expose()
-	@IsNotEmpty()
-	name?: string
-
-	@IsOptional()
-	@IsNumber()
-	@Expose()
-	@IsNotEmpty()
-	age?: number
-}
 
 export class SecuritySettingsDto {
 	@ApiProperty({ example: true })
@@ -49,7 +34,7 @@ export class UserResponseDto {
 
 	@ApiProperty({ example: 'timestamp' })
 	@Expose()
-	createdAt: string
+	createdAt: Date
 
 	@ApiProperty()
 	@Expose()
