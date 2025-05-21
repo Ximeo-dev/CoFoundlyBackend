@@ -28,7 +28,7 @@ export class CreateUserProfileDto {
 		message: 'Вам должно быть не менее 14 лет',
 	})
 	@Type(() => Date)
-	birthDate: string
+	birthDate: Date
 
 	// @IsString()
 	// @IsNotEmpty()

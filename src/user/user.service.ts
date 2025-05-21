@@ -11,7 +11,7 @@ import {
 } from 'class-transformer'
 import { RegisterDto } from 'src/auth/dto/register.dto'
 import { PrismaService } from 'src/prisma/prisma.service'
-import { UpdateUserDto, UserResponseDto } from './dto/user.dto'
+import { UserResponseDto } from './dto/user.dto'
 
 @Injectable()
 export class UserService {
@@ -130,28 +130,6 @@ export class UserService {
 		if (!user) throw new NotFoundException(`Invalid user`)
 
 		return plainToInstance(UserResponseDto, user, {
-			excludeExtraneousValues: true,
-		})
-	}
-
-	async updateUserData(id: string, dto: UpdateUserDto) {
-		const userData = await this.getUserData(id)
-
-		if (!userData) throw new BadRequestException('User not exist')
-
-		const baseData =
-			(instanceToPlain(dto, {
-				exposeUnsetFields: false,
-			}) as Record<string, any>) || {}
-
-		const updatedData = this.prisma.user.update({
-			where: { id },
-			data: {
-				...baseData,
-			},
-		})
-
-		return plainToClass(UserResponseDto, updatedData, {
 			excludeExtraneousValues: true,
 		})
 	}
