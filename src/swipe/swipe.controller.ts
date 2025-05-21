@@ -16,12 +16,29 @@ import { SwipeDto } from './dto/swipe.dto'
 import { Roles } from 'src/auth/decorators/roles.decorator'
 import { RolesGuard } from 'src/auth/guards/roles.guard'
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
+import {
+	ApiBearerAuth,
+	ApiExcludeEndpoint,
+	ApiNotFoundResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiQuery,
+} from '@nestjs/swagger'
+import { UserProfileWithoutBirthDateResponseDto } from 'src/profile/dto/user-profile.dto'
 
 @Controller('swipe')
 @UseGuards(ThrottlerGuard)
+@ApiBearerAuth()
 export class SwipeController {
 	constructor(private readonly swipeService: SwipeService) {}
 
+	@ApiOperation({ summary: 'Find candidate for swipe' })
+	@ApiOkResponse({ type: UserProfileWithoutBirthDateResponseDto })
+	@ApiNotFoundResponse({ description: 'User profile not found' })
+	@ApiQuery({
+		name: 'intent',
+		enum: SwipeIntent,
+	})
 	@Get()
 	@Auth()
 	async findCandidate(
@@ -31,6 +48,18 @@ export class SwipeController {
 		return this.swipeService.findCandidate(id, intent)
 	}
 
+	@ApiOperation({ summary: 'Handle user swipe' })
+	@ApiOkResponse({
+		schema: {
+			type: 'object',
+			properties: {
+				isMatch: { type: 'boolean' },
+				matchedUserId: { type: 'string' },
+			},
+			required: ['isMatch'],
+		},
+	})
+	@ApiNotFoundResponse({ description: 'Profile not found' })
 	@HttpCode(200)
 	@Post()
 	@Auth()
@@ -39,6 +68,7 @@ export class SwipeController {
 		return this.swipeService.handleSwipe(id, dto.toUserId, dto.action)
 	}
 
+	@ApiExcludeEndpoint()
 	@HttpCode(200)
 	@Post('reset')
 	@Roles('ADMIN')

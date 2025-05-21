@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger'
 import {
 	IsEmail,
 	IsNotEmpty,
@@ -8,10 +9,12 @@ import {
 } from 'class-validator'
 
 export class RegisterDto {
+	@ApiProperty({ example: 'user@example.com' })
 	@IsEmail()
 	@IsNotEmpty()
 	email: string
 
+	@ApiProperty({ example: 'UserName' })
 	@IsNotEmpty()
 	@MinLength(4, {
 		message: 'Имя пользователя должно состоять минимум из 4 символов',
@@ -26,6 +29,7 @@ export class RegisterDto {
 	})
 	username: string
 
+	@ApiProperty({ example: 'password123' })
 	@IsString()
 	@MinLength(8, {
 		message: 'Пароль должен состоять минимум из 8 символов',
@@ -41,12 +45,14 @@ export class RegisterDto {
 }
 
 export class EmailAvailableDto {
+	@ApiProperty({ example: 'user@example.com' })
 	@IsEmail()
 	@IsNotEmpty()
 	email: string
 }
 
 export class UsernameAvailableDto {
+	@ApiProperty({ example: 'UserName' })
 	@IsString()
 	@MinLength(4, {
 		message: 'Имя пользователя должно состоять минимум из 4 символов',

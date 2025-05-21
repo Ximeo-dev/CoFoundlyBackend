@@ -1,5 +1,6 @@
 import { SecurityAction } from 'src/security/types/security.types'
 import { TwoFactorAction } from 'src/security/types/two-factor.types'
+import { getEnvVar } from 'src/utils/env'
 
 export const TTL_BY_2FA_ACTION: Record<TwoFactorAction, number> = {
 	[TwoFactorAction.BIND]: 120,
@@ -50,3 +51,8 @@ export const CORS_ORIGIN_LIST = [
 	'http://localhost:3000',
 	'https://cofoundly.infinitum.su',
 ]
+
+export const FRONTEND_REDIRECT_LINK = `http://${getEnvVar('FRONTEND_URL')}`
+export const FRONTEND_RESET_PASSWORD = `${FRONTEND_REDIRECT_LINK}/reset-password`
+
+export const API_URL = `http://${getEnvVar('API_URL')}`

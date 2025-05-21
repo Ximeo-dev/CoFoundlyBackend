@@ -8,6 +8,8 @@ import { randomBytes } from 'crypto'
 import { compile } from 'handlebars'
 import { AuthService } from 'src/auth/auth.service'
 import {
+	API_URL,
+	FRONTEND_RESET_PASSWORD,
 	MAIL_MESSAGES_FILE_PATHS,
 	TTL_BY_SECURITY_ACTION,
 } from 'src/constants/constants'
@@ -122,7 +124,7 @@ export class SecurityService {
 			userId,
 			SecurityAction.CONFIRM_EMAIL,
 		)
-		const confirmationUrl = `http://${getEnvVar('API_URL')}/security/confirm-email?userId=${userId}&token=${token}`
+		const confirmationUrl = `${API_URL}/security/confirm-email?userId=${userId}&token=${token}`
 
 		const context = { confirmationUrl }
 		const template = await getHtmlTemplate(
@@ -140,7 +142,7 @@ export class SecurityService {
 
 	async confirmEmailWithToken(userId: string, token: string) {
 		const user = await this.userService.getById(userId)
-		if (!user) throw new NotFoundException('Пользователь не найден')
+		if (!user) throw new NotFoundException('User not found')
 
 		const isValid = await this.verifyActionToken(
 			userId,
@@ -153,13 +155,13 @@ export class SecurityService {
 
 	async sendEmailResetPassword(email: string) {
 		const user = await this.userService.getByEmail(email)
-		if (!user) throw new BadRequestException('Пользователь не найден')
+		if (!user) throw new NotFoundException('User not found')
 
 		const token = await this.issueActionEmailToken(
 			user.id,
 			SecurityAction.RESET_PASSWORD,
 		)
-		const confirmationUrl = `http://${getEnvVar('FRONTEND_URL')}/reset-password?userId=${user.id}&token=${token}`
+		const confirmationUrl = `${FRONTEND_RESET_PASSWORD}?userId=${user.id}&token=${token}`
 
 		const context = { email: user.email, confirmationUrl }
 		const template = await getHtmlTemplate(
@@ -181,7 +183,7 @@ export class SecurityService {
 		token: string,
 	) {
 		const user = await this.userService.getById(userId)
-		if (!user) throw new NotFoundException('Пользователь не найден')
+		if (!user) throw new NotFoundException('User not found')
 
 		const isValid = await this.verifyActionToken(
 			userId,
@@ -217,7 +219,7 @@ export class SecurityService {
 			throw new BadRequestException('Пользователь с таким email уже существует')
 
 		const token = await this.issueChangeEmailToken(dto.newEmail)
-		const confirmationUrl = `http://${getEnvVar('API_URL')}/security/change-email/confirm?userId=${userId}&token=${token}`
+		const confirmationUrl = `${API_URL}/security/change-email/confirm?userId=${userId}&token=${token}`
 
 		const context = {
 			displayUsername: userData.displayUsername,
@@ -239,7 +241,7 @@ export class SecurityService {
 
 	async confirmChangeEmail(userId: string, token: string) {
 		const user = await this.userService.getById(userId)
-		if (!user) throw new NotFoundException('Пользователь не найден')
+		if (!user) throw new NotFoundException('User not found')
 
 		const newEmail = await this.verifyChangeEmailToken(token)
 		if (!newEmail) throw new BadRequestException('Invalid or expired token')

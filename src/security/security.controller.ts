@@ -20,11 +20,34 @@ import {
 } from 'src/security/dto/security.dto'
 import { getEnvVar } from 'src/utils/env'
 import { SecurityService } from './security.service'
+import {
+	ApiBadRequestResponse,
+	ApiBearerAuth,
+	ApiNotFoundResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiResponse,
+} from '@nestjs/swagger'
+import { FRONTEND_REDIRECT_LINK } from 'src/constants/constants'
 
 @Controller('security')
 export class SecurityController {
 	constructor(private readonly securityService: SecurityService) {}
 
+	@ApiOperation({ summary: 'Send email confirmation message' })
+	@ApiBearerAuth()
+	@ApiOkResponse({
+		schema: {
+			type: 'object',
+			properties: {
+				message: {
+					type: 'string',
+					example: 'Письмо с подтверждением отправлено',
+				},
+			},
+		},
+	})
+	@ApiBadRequestResponse({ description: 'Email already confirmed' })
 	@HttpCode(200)
 	@Post('send-confirmation')
 	@Auth()
@@ -33,6 +56,13 @@ export class SecurityController {
 		return { message: 'Письмо с подтверждением отправлено' }
 	}
 
+	@ApiOperation({
+		summary: 'Email confirm',
+		description: 'Handles confirmation link from mail',
+	})
+	@ApiOkResponse({ description: 'Should redirect to profile' })
+	@ApiNotFoundResponse({ description: 'User not found' })
+	@ApiBadRequestResponse({ description: 'Invalid or expired token' })
 	@HttpCode(200)
 	@Get('confirm-email')
 	async confirmEmail(
@@ -41,9 +71,22 @@ export class SecurityController {
 		@Res({ passthrough: true }) res: Response,
 	) {
 		await this.securityService.confirmEmailWithToken(userId, token)
-		return res.redirect(`http://${getEnvVar('FRONTEND_URL')}/profile`)
+		return res.redirect(FRONTEND_REDIRECT_LINK)
 	}
 
+	@ApiOperation({ summary: 'Send change email confirmation message' })
+	@ApiBearerAuth()
+	@ApiOkResponse({
+		schema: {
+			type: 'object',
+			properties: {
+				message: {
+					type: 'string',
+					example: 'Письмо с подтверждением отправлено',
+				},
+			},
+		},
+	})
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@Post('change-email')
@@ -57,6 +100,13 @@ export class SecurityController {
 		return { message: 'Письмо с подтверждением отправлено' }
 	}
 
+	@ApiOperation({
+		summary: 'Change email confirm',
+		description: 'Handles change email confirmation link from mail',
+	})
+	@ApiOkResponse({ description: 'Should redirect to profile' })
+	@ApiNotFoundResponse({ description: 'User not found' })
+	@ApiBadRequestResponse({ description: 'Invalid or expired token' })
 	@HttpCode(200)
 	@Get('change-email/confirm')
 	async confirmChangeEmail(
@@ -65,9 +115,22 @@ export class SecurityController {
 		@Res({ passthrough: true }) res: Response,
 	) {
 		await this.securityService.confirmChangeEmail(userId, token)
-		return res.redirect(`http://${getEnvVar('FRONTEND_URL')}/profile`)
+		return res.redirect(FRONTEND_REDIRECT_LINK)
 	}
 
+	@ApiOperation({ summary: 'Send reset password confirmation message' })
+	@ApiOkResponse({
+		schema: {
+			type: 'object',
+			properties: {
+				message: {
+					type: 'string',
+					example: 'Письмо с подтверждением отправлено',
+				},
+			},
+		},
+	})
+	@ApiNotFoundResponse({ description: 'User not found' })
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('reset-password')
@@ -76,6 +139,24 @@ export class SecurityController {
 		return { message: 'Письмо с подтверждением отправлено' }
 	}
 
+	@ApiOperation({
+		summary: 'Reset password confirm',
+		description: 'Handles reset password confirmation link from mail',
+	})
+	@ApiOkResponse({
+		schema: {
+			type: 'object',
+			properties: {
+				message: {
+					type: 'string',
+					example: 'Password reset successfully',
+				},
+			},
+		},
+	})
+	@ApiNotFoundResponse({ description: 'User not found' })
+	@ApiBadRequestResponse({ description: 'Invalid or expired token' })
+	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('reset-password/confirm')

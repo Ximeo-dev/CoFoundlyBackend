@@ -1,9 +1,4 @@
-import {
-	Controller,
-	HttpCode,
-	Post,
-	UseGuards,
-} from '@nestjs/common'
+import { Controller, HttpCode, Post, UseGuards } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/user.decorator'
 import { Require2FA } from 'src/security/decorators/two-factor.decorator'
@@ -11,11 +6,20 @@ import { TwoFactorGuard } from 'src/security/guards/two-factor.guard'
 import { TwoFactorAction } from 'src/security/types/two-factor.types'
 import { TwoFactorService } from './two-factor.service'
 import { Confirmed } from './decorators/confirmed.decorator'
+import {
+	ApiBearerAuth,
+	ApiForbiddenResponse,
+	ApiOkResponse,
+	ApiOperation,
+} from '@nestjs/swagger'
 
 @Controller('2fa')
+@ApiBearerAuth()
 export class TwoFactorController {
 	constructor(private readonly twoFactorService: TwoFactorService) {}
 
+	@ApiOperation({ summary: 'Get bind 2FA token' })
+	@ApiOkResponse({ type: String })
 	@HttpCode(200)
 	@Post('bind')
 	@Confirmed()
@@ -24,6 +28,12 @@ export class TwoFactorController {
 		return this.twoFactorService.issueBindToken(id)
 	}
 
+	@ApiOperation({
+		summary: 'Unbind 2FA',
+		description: 'Unbind 2FA. Requires 2FA confirmation',
+	})
+	@ApiOkResponse({ type: String, example: 'success' })
+	@ApiForbiddenResponse({ description: '2FA confirmation required' })
 	@HttpCode(200)
 	@Post('unbind')
 	@Require2FA(TwoFactorAction.UNBIND)

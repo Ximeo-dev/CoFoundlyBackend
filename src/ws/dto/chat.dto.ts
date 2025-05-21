@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import {
 	ArrayNotEmpty,
@@ -22,12 +23,14 @@ export class SendMessageDto {
 }
 
 export class GetMessagesDto {
+	@ApiProperty({ default: 1, minimum: 1 })
 	@IsInt()
 	@Min(1)
 	@IsOptional()
 	@Type(() => Number)
 	page: number = 1
 
+	@ApiProperty({ default: 1, maximum: 30, minimum: 1 })
 	@IsInt()
 	@Min(1)
 	@Max(30)

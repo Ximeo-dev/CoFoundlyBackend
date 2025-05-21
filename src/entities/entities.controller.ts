@@ -17,12 +17,23 @@ import { RolesGuard } from 'src/auth/guards/roles.guard'
 import { EntitiesService } from './entities.service'
 import { AutocompleteQueryParamsDto, EntityDto } from './dto/entities.dto'
 import { EnumValidationPipe } from 'src/pipes/enum-validation-pipe'
-import { EntityType } from './types/entity.types'
+import { Entity, EntityType } from './types/entity.types'
+import {
+	ApiBearerAuth,
+	ApiExcludeEndpoint,
+	ApiOkResponse,
+	ApiOperation,
+	ApiParam,
+} from '@nestjs/swagger'
 
 @Controller('entity')
+@ApiBearerAuth()
 export class EntitiesController {
 	constructor(private readonly entitiesService: EntitiesService) {}
 
+	@ApiOperation({ summary: 'Get entities for autocomplete' })
+	@ApiOkResponse({ type: [Entity] })
+	@ApiParam({ name: 'entity', enum: EntityType })
 	@Get(':entity/autocomplete')
 	@UsePipes(new ValidationPipe())
 	@Auth()
@@ -38,6 +49,7 @@ export class EntitiesController {
 		)
 	}
 
+	@ApiExcludeEndpoint()
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@Post(':entity')
@@ -51,6 +63,7 @@ export class EntitiesController {
 		return this.entitiesService.createEntity(dto, entity)
 	}
 
+	@ApiExcludeEndpoint()
 	@HttpCode(200)
 	@UsePipes(new ValidationPipe())
 	@Delete(':entity/:entityName')

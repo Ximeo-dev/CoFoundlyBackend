@@ -3,6 +3,7 @@ import {
 	Controller,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Post,
 	Query,
 	Req,
@@ -14,7 +15,7 @@ import {
 import { Request, Response } from 'express'
 import { UserService } from 'src/user/user.service'
 import { AuthService } from './auth.service'
-import { LoginDto } from './dto/login.dto'
+import { LoginDto, LoginResponseDto } from './dto/login.dto'
 import {
 	EmailAvailableDto,
 	RegisterDto,
@@ -23,6 +24,17 @@ import {
 import { Auth } from './decorators/auth.decorator'
 import { CurrentUser } from './decorators/user.decorator'
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
+import {
+	ApiBadRequestResponse,
+	ApiBearerAuth,
+	ApiBody,
+	ApiOkResponse,
+	ApiOperation,
+	ApiQuery,
+	ApiResponse,
+	ApiUnauthorizedResponse,
+} from '@nestjs/swagger'
+import { UserResponseDto } from 'src/user/dto/user.dto'
 
 @Controller('auth')
 @UseGuards(ThrottlerGuard)
@@ -32,6 +44,11 @@ export class AuthController {
 		private readonly userService: UserService,
 	) {}
 
+	@ApiResponse({
+		status: HttpStatus.OK,
+		type: LoginResponseDto,
+	})
+	@ApiUnauthorizedResponse({ description: 'Неверный email или пароль' })
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('login')
@@ -46,6 +63,13 @@ export class AuthController {
 		return response
 	}
 
+	@ApiResponse({
+		status: HttpStatus.OK,
+		type: LoginResponseDto,
+	})
+	@ApiBadRequestResponse({
+		description: 'Аккаунт с такой почтой уже существует',
+	})
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('register')
@@ -60,6 +84,8 @@ export class AuthController {
 		return response
 	}
 
+	@ApiBearerAuth()
+	@ApiOkResponse({ type: Boolean })
 	@HttpCode(200)
 	@Post('logout')
 	@Auth()
@@ -70,6 +96,7 @@ export class AuthController {
 		return this.authService.logout(userId, res)
 	}
 
+	@ApiOperation({ summary: 'Update access token with refresh token' })
 	@HttpCode(200)
 	@Post('login/access-token')
 	async getNewTokens(
@@ -96,6 +123,8 @@ export class AuthController {
 		return response
 	}
 
+	@ApiOperation({ summary: 'Check if email is already used' })
+	@ApiOkResponse({ type: Boolean, example: true })
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Get('register/email-available')
@@ -106,6 +135,8 @@ export class AuthController {
 		return false
 	}
 
+	@ApiOkResponse({ type: Boolean, example: true })
+	@ApiOperation({ summary: 'Check if username is already used' })
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Get('register/username-available')

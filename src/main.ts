@@ -27,6 +27,8 @@ async function bootstrap() {
 	const app = await NestFactory.create<NestExpressApplication>(AppModule)
 	const config = app.get(ConfigService)
 
+	const isDev = config.getOrThrow<string>('NODE_ENV') !== 'production'
+
 	app.disable('x-powered-by', 'X-Powered-By')
 	app.use(cookieParser())
 	app.enableCors({
@@ -52,15 +54,14 @@ async function bootstrap() {
 					imgSrc: ["'self'", 'data:', 'blob:'],
 					connectSrc: [
 						"'self'",
-						`wss://${config.getOrThrow<string>('API_URL')}`,
-						`https://${config.getOrThrow<string>('API_URL')}`,
+						`wss://${config.get('API_URL')}`,
+						`https://${config.get('API_URL')}`,
 					],
 					frameAncestors: ["'none'"],
 					objectSrc: ["'none'"],
 					upgradeInsecureRequests: [],
 				},
 			},
-
 			referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 			crossOriginEmbedderPolicy: false,
 			crossOriginResourcePolicy: { policy: 'same-site' },
@@ -68,7 +69,7 @@ async function bootstrap() {
 			frameguard: { action: 'deny' },
 			hidePoweredBy: true,
 			hsts: {
-				maxAge: 63072000, // 2 года
+				maxAge: 63072000,
 				includeSubDomains: true,
 				preload: true,
 			},
