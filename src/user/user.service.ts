@@ -177,7 +177,7 @@ export class UserService {
 		})
 	}
 
-	async setTelegramId(userId: string, telegramId: string) {
+	async setTelegramId(userId: string, telegramId: string | null) {
 		await this.prisma.securitySettings.update({
 			where: {
 				userId,

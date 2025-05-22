@@ -102,6 +102,7 @@ export class TelegramService {
 			getActionText(TwoFactorAction.BIND, 'pending', {
 				username: ctx.from.username ?? ctx.from.id,
 				email: user.email,
+				displayName: user.displayUsername
 			}),
 			{
 				reply_markup: this.create2FAKeyboard(user.id, TwoFactorAction.BIND),

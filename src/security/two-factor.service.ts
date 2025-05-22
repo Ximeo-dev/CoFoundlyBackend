@@ -213,6 +213,7 @@ export class TwoFactorService {
 
 		if (!hasSecuritySettings(user)) return TwoFactorHandleResult.UserNotFound
 
+		await this.userService.setTelegramId(userId, null)
 		await this.userService.set2FAStatus(userId, false)
 		return TwoFactorHandleResult.Success
 	}
