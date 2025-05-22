@@ -12,9 +12,13 @@ import { AuthenticatedSocket } from './types/socket.types'
 import { ChatService } from './chat/chat.service'
 import { Server } from 'socket.io'
 import { WebsocketService } from './websocket.service'
+import { CORS_ORIGIN_LIST } from 'src/constants/constants'
 
 @WebSocketGateway({
 	namespace: '/',
+	cors: {
+		origin: CORS_ORIGIN_LIST
+	}
 })
 @UseFilters(WsExceptionFilter)
 export class ConnectionGateway
