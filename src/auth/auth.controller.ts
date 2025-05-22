@@ -27,14 +27,11 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
-	ApiBody,
 	ApiOkResponse,
 	ApiOperation,
-	ApiQuery,
 	ApiResponse,
 	ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
-import { UserResponseDto } from 'src/user/dto/user.dto'
 
 @Controller('auth')
 export class AuthController {
