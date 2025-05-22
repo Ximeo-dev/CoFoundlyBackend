@@ -5,9 +5,9 @@
 
 Backend-репозиторий для сервиса **CoFoundly**, разработанный с использованием современного стека на **NestJS**
 
-Production-версия доступна по адресу https://cofoundly-api.infinitum.su
+Production-версия доступна по адресу: https://cofoundly-api.infinitum.su
 
-Frontend-репозиторий проекта располагается на https://github.com/Ximeo-dev/CoFoundlyWebsite.git
+Frontend-репозиторий: https://github.com/Ximeo-dev/CoFoundlyWebsite.git
 
 ## 🧰 Стек технологий
 
