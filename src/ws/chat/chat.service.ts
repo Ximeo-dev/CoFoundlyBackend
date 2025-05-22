@@ -303,7 +303,7 @@ export class ChatService {
 
 		return this.prisma.message.findMany({
 			where: { chatId },
-			orderBy: { sentAt: 'asc' },
+			orderBy: { sentAt: 'desc' },
 			skip: (page - 1) * limit,
 			take: limit,
 			include: {
@@ -331,7 +331,7 @@ export class ChatService {
 		})
 
 		const newReceipts = messagesWithReceipts
-			.filter((msg) => msg.senderId !== userId && !msg.readReceipt)
+			.filter((msg) => msg.senderId !== userId && !msg.readReceipt.length)
 			.map((msg) => ({
 				messageId: msg.id,
 				userId,

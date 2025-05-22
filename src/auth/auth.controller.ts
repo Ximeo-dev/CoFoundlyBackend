@@ -37,7 +37,6 @@ import {
 import { UserResponseDto } from 'src/user/dto/user.dto'
 
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
 	constructor(
 		private readonly authService: AuthService,
@@ -53,6 +52,7 @@ export class AuthController {
 	@HttpCode(200)
 	@Post('login')
 	@Throttle({ default: { limit: 4, ttl: 10000 } })
+	@UseGuards(ThrottlerGuard)
 	async login(
 		@Body() dto: LoginDto,
 		@Res({ passthrough: true }) res: Response,
@@ -74,6 +74,7 @@ export class AuthController {
 	@HttpCode(200)
 	@Post('register')
 	@Throttle({ default: { limit: 2, ttl: 10000 } })
+	@UseGuards(ThrottlerGuard)
 	async register(
 		@Body() dto: RegisterDto,
 		@Res({ passthrough: true }) res: Response,
