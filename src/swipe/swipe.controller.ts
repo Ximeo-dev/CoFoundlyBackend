@@ -27,7 +27,6 @@ import {
 import { UserProfileWithoutBirthDateResponseDto } from 'src/profile/dto/user-profile.dto'
 
 @Controller('swipe')
-@UseGuards(ThrottlerGuard)
 @ApiBearerAuth()
 export class SwipeController {
 	constructor(private readonly swipeService: SwipeService) {}
@@ -42,6 +41,7 @@ export class SwipeController {
 	@Get()
 	@Auth()
 	@Throttle({ default: { limit: 4, ttl: 1000 } })
+	@UseGuards(ThrottlerGuard)
 	async findCandidate(
 		@CurrentUser('id') id: string,
 		@Query('intent', new EnumValidationPipe(SwipeIntent)) intent: SwipeIntent,
@@ -65,6 +65,7 @@ export class SwipeController {
 	@Post()
 	@Auth()
 	@Throttle({ default: { limit: 2, ttl: 1000 } })
+	@UseGuards(ThrottlerGuard)
 	async handleSwipe(@CurrentUser('id') id: string, @Body() dto: SwipeDto) {
 		return this.swipeService.handleSwipe(id, dto.toUserId, dto.action)
 	}
