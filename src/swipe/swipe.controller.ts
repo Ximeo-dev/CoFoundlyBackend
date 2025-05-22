@@ -41,6 +41,7 @@ export class SwipeController {
 	})
 	@Get()
 	@Auth()
+	@Throttle({ default: { limit: 4, ttl: 1000 } })
 	async findCandidate(
 		@CurrentUser('id') id: string,
 		@Query('intent', new EnumValidationPipe(SwipeIntent)) intent: SwipeIntent,
