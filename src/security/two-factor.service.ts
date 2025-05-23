@@ -3,6 +3,8 @@ import {
 	forwardRef,
 	Inject,
 	Injectable,
+	InternalServerErrorException,
+	Logger,
 	NotFoundException,
 } from '@nestjs/common'
 import { GRACE_TTL, TTL_BY_2FA_ACTION } from 'src/constants/constants'
@@ -20,6 +22,8 @@ import { SecurityService } from './security.service'
 
 @Injectable()
 export class TwoFactorService {
+	private logger: Logger = new Logger(TwoFactorService.name)
+
 	constructor(
 		private readonly securityService: SecurityService,
 		private readonly userService: UserService,
@@ -62,8 +66,17 @@ export class TwoFactorService {
 		} while (await this.redis.exists(this.bind2FATokenKey(token)))
 
 		const ttl = TTL_BY_2FA_ACTION[action] ?? 60
-		await this.redis.set(this.bind2FATokenKey(token), userId, ttl)
-		await this.redis.set(this.bind2FAUserIdKey(userId), token, ttl)
+
+		const results = await this.redis
+			.multi()
+			.set(this.bind2FATokenKey(token), userId, 'EX', ttl)
+			.set(this.bind2FAUserIdKey(userId), token, 'EX', ttl)
+			.exec()
+
+		if (!results) {
+			this.logger.error('Redis transaction failed')
+			throw new InternalServerErrorException('Generate token failed')
+		}
 
 		return token
 	}
