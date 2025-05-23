@@ -18,6 +18,7 @@ import {
 	SOCKET_CONNECTIONS_PER_USER,
 } from 'src/constants/constants'
 import { RedisService } from 'src/redis/redis.service'
+import { ConfigService } from '@nestjs/config'
 
 @WebSocketGateway({
 	namespace: '/',
@@ -37,6 +38,7 @@ export class ConnectionGateway
 		private readonly authSocketService: AuthSocketService,
 		private readonly chatService: ChatService,
 		private readonly redis: RedisService,
+		private readonly configService: ConfigService,
 	) {}
 
 	private getUserConnectionsKey(userId: string) {
@@ -52,10 +54,17 @@ export class ConnectionGateway
 		await this.authSocketService.attachUserToSocket(client)
 		const userId = client?.user?.id
 
-		if (!userId || client.disconnected) return
+		if (!userId || client.disconnected) return client.disconnect()
 
 		const userConnectionsKey = this.getUserConnectionsKey(userId)
-		const ip = client.handshake.address
+		const forwarded = client.handshake.headers['x-forwarded-for'] as string
+		const ip = forwarded?.split(',')[0]?.trim()
+		if (
+			!ip &&
+			this.configService.getOrThrow<string>('NODE_ENV') !== 'development'
+		)
+			return client.disconnect()
+
 		const ipConnectionsKey = this.getIpConnectionsKey(ip)
 
 		const userConnections = await this.redis.smembers(userConnectionsKey)
@@ -94,7 +103,13 @@ export class ConnectionGateway
 		const userId = client?.user?.id
 		if (userId) {
 			const userConnectionsKey = this.getUserConnectionsKey(userId)
-			const ip = client.handshake.address
+			const forwarded = client.handshake.headers['x-forwarded-for'] as string
+			const ip = forwarded?.split(',')[0]?.trim()
+			if (
+				!ip &&
+				this.configService.getOrThrow<string>('NODE_ENV') !== 'development'
+			)
+				return client.disconnect()
 			const ipConnectionsKey = this.getIpConnectionsKey(ip)
 
 			await this.redis.srem(userConnectionsKey, client.id)
