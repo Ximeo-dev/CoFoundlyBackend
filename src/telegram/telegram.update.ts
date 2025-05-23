@@ -27,6 +27,8 @@ export class TelegramUpdate {
 		if (payload && payload.startsWith('2fa_')) {
 			const token = payload.slice('2fa_'.length)
 
+			await ctx.deleteMessage()
+
 			return this.telegramService.handleTelegramBindCommand(ctx, token)
 		} else if (payload) {
 			await ctx.reply(`⚠️ Неизвестный параметр: ${payload}`)
@@ -55,6 +57,8 @@ export class TelegramUpdate {
 	@Command('2fa')
 	async handle2FA(ctx: Context) {
 		const [token] = parseCommandArgs(ctx.message?.text)
+
+		await ctx.deleteMessage()
 
 		if (!token) {
 			return ctx.reply('❌ Пожалуйста, укажи токен: /2fa <токен>')

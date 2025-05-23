@@ -28,6 +28,9 @@ export const ACCESS_TOKEN_TTL = '3h'
 export const REFRESH_TOKEN_TTL = '3d'
 export const REFRESH_TOKEN_EXPIRE_DAYS = 3
 
+export const SOCKET_CONNECTIONS_PER_USER = 3
+export const SOCKET_CONNECTIONS_PER_IP = 5
+
 export const USER_PROJECTS_LIMIT = 1
 
 export const AVATAR_SIZES = [512, 128, 64]

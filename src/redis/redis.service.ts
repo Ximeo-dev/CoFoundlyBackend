@@ -23,6 +23,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 		return this.client.quit()
 	}
 
+	multi() {
+		return this.client.multi()
+	}
+
 	async set(key: string, value: string, ttlSeconds?: number) {
 		if (ttlSeconds) {
 			await this.client.set(key, value, 'EX', ttlSeconds)
@@ -62,6 +66,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
 	async ttl(key: string): Promise<number> {
 		return this.client.ttl(key)
+	}
+
+	async smembers(key: string) {
+		return this.client.smembers(key)
+	}
+
+	async srem(key: string, ...members: string[]) {
+		return this.client.srem(key, members)
+	}
+
+	async sadd(key: string, ...members: string[]) {
+		return this.client.sadd(key, members)
+	}
+
+	async scard(key: string) {
+		return this.client.scard(key)
 	}
 
 	async setObject<T>(
