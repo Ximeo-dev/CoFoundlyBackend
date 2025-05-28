@@ -93,7 +93,6 @@ export class SecurityController {
 	@UsePipes(new ValidationPipe())
 	@Post('change-email')
 	@Throttle({ default: { limit: 2, ttl: 10000 } })
-	@Confirmed()
 	@Auth()
 	async changeEmail(
 		@CurrentUser('id') id: string,
