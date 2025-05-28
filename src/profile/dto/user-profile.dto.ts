@@ -180,18 +180,22 @@ export class UserProfileResponseDto {
 
 	@ApiProperty()
 	@Expose()
+	@Type(() => Entity)
 	job: Entity
 
 	@ApiProperty({ type: [Entity] })
 	@Expose()
+	@Type(() => Entity)
 	languages: Entity[]
 
 	@ApiProperty({ type: [Entity] })
 	@Expose()
+	@Type(() => Entity)
 	skills: Entity[]
 
 	@ApiProperty({ type: [Entity] })
 	@Expose()
+	@Type(() => Entity)
 	industries: Entity[]
 
 	@ApiProperty()

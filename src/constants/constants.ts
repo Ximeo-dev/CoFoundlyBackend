@@ -50,6 +50,8 @@ export const SWIPE_SCORE_WEIGHTS = {
 	experience: 0.1,
 } as const
 
+export const SCORE_BOOST_FOR_LIKED_ME = 0.2
+
 export const CORS_ORIGIN_LIST = [
 	'http://localhost:3000',
 	'https://cofoundly.infinitum.su',

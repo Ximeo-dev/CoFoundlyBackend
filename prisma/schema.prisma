@@ -212,7 +212,7 @@ model Swipe {
   toProfile     UserProfile     @relation("SwipesTo", fields: [toProfileId], references: [id], onDelete: Cascade)
 
   @@unique([fromProfileId, toProfileId])
-  @@index([toProfileId])
+  @@index([toProfileId, fromProfileId, isLiked])
 }
 
 model Match {

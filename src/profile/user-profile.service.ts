@@ -34,7 +34,7 @@ export class UserProfileService {
 		return `user:profile:${userId}`
 	}
 
-	async getUserProfile(userId: string) {
+	async getUserProfile(userId: string, forResponse: boolean = true) {
 		try {
 			const cachedProfile = await this.redis.getObject<UserFullProfileExtended>(
 				this.getCacheKey(userId),
@@ -49,10 +49,10 @@ export class UserProfileService {
 					where: { userId },
 					include: {
 						user: { select: { username: true, displayUsername: true } },
-						job: { select: { name: true } },
-						skills: { select: { name: true } },
-						languages: { select: { name: true } },
-						industries: { select: { name: true } },
+						job: true,
+						skills: true,
+						languages: true,
+						industries: true,
 					},
 				})
 
@@ -68,7 +68,9 @@ export class UserProfileService {
 					CACHE_TTL.USER_PROFILE,
 				)
 			}
-
+			if (!forResponse) {
+				return profile
+			}
 			return this.prepareToResponse(profile, false)
 		} catch (error) {
 			if (error instanceof NotFoundException) {
@@ -105,10 +107,10 @@ export class UserProfileService {
 				where: { userId: { in: missingIds } },
 				include: {
 					user: { select: { username: true, displayUsername: true } },
-					job: { select: { name: true } },
-					skills: { select: { name: true } },
-					languages: { select: { name: true } },
-					industries: { select: { name: true } },
+					job: true,	
+					skills: true,
+					languages: true,
+					industries: true,
 				},
 			})
 
@@ -190,10 +192,10 @@ export class UserProfileService {
 							displayUsername: true,
 						},
 					},
-					job: { select: { name: true } },
-					skills: { select: { name: true } },
-					languages: { select: { name: true } },
-					industries: { select: { name: true } },
+					job: true,
+					skills: true,
+					languages: true,
+					industries: true,
 				},
 			})
 			await this.redis.setObject<UserFullProfileExtended>(
@@ -272,10 +274,10 @@ export class UserProfileService {
 							displayUsername: true,
 						},
 					},
-					job: { select: { name: true } },
-					skills: { select: { name: true } },
-					languages: { select: { name: true } },
-					industries: { select: { name: true } },
+					job: true,
+					skills: true,
+					languages: true,
+					industries: true,
 				},
 			})
 			await this.redis.setObject<UserFullProfileExtended>(

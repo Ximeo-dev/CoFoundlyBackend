@@ -6,7 +6,10 @@ import { ChatService } from 'src/ws/chat/chat.service'
 import { ChatServerEvent } from 'src/ws/types/events'
 import { WebsocketService } from 'src/ws/websocket.service'
 import { ComputingService } from './computing.service'
-import { SwipeAction, SwipeIntent } from './types/swipe.types'
+import { ScoredCandidate, SwipeAction, SwipeIntent } from './types/swipe.types'
+import { SCORE_BOOST_FOR_LIKED_ME } from 'src/constants/constants'
+import Heap from 'heap-js'
+import { UserProfileExtended } from 'src/profile/types/profile.types'
 
 @Injectable()
 export class SwipeService {
@@ -19,14 +22,10 @@ export class SwipeService {
 	) {}
 
 	async findCandidate(currentUserId: string, intent: SwipeIntent) {
-		const currentUser = await this.prisma.userProfile.findUnique({
-			where: { userId: currentUserId },
-			include: {
-				skills: true,
-				industries: true,
-				languages: true,
-			},
-		})
+		const currentUser = (await this.userProfileService.getUserProfile(
+			currentUserId,
+			false,
+		)) as UserProfileExtended
 
 		if (!currentUser) throw new NotFoundException('User profile not found')
 
@@ -47,26 +46,38 @@ export class SwipeService {
 				skills: true,
 				industries: true,
 				languages: true,
+				performedSwipes: {
+					where: {
+						toProfileId: currentUser.id,
+						isLiked: true,
+					},
+					select: { id: true },
+				},
 			},
+			take: 50,
 		})
 
-		const scored = candidates.map((candidate) => {
+		const heap = new Heap(
+			(a: ScoredCandidate, b: ScoredCandidate) => b.score - a.score,
+		)
+
+		candidates.forEach((candidate) => {
 			let score = this.computingService.calculateScore(
 				currentUser,
 				candidate,
 				intent,
 			)
-			const jitter = 1 + (Math.random() * 0.4 - 0.2)
-			score *= jitter
-			return { candidate, score }
+			const likedMe = candidate.performedSwipes.length > 0
+			if (likedMe) score += SCORE_BOOST_FOR_LIKED_ME
+			const jitter = 1 + (Math.random() * 0.2 - 0.1)
+			heap.push({ candidate, score: score * jitter })
 		})
 
-		scored.sort((a, b) => b.score - a.score)
+		const bestCandidate = heap.pop()?.candidate
 
-		const firstScored = scored[0]?.candidate
-
-		if (!firstScored) return null
-		return this.userProfileService.getForeignUserProfile(firstScored.userId)
+		if (!bestCandidate) return null
+		// В будущем делать выдачу Top-N, а не Top-1
+		return this.userProfileService.getForeignUserProfile(bestCandidate.userId)
 	}
 
 	async handleSwipe(fromUserId: string, toUserId: string, action: SwipeAction) {
