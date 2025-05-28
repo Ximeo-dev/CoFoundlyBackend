@@ -30,6 +30,7 @@ import {
 } from '@nestjs/swagger'
 import { FRONTEND_REDIRECT_LINK } from 'src/constants/constants'
 import { Throttle } from '@nestjs/throttler'
+import { Confirmed } from './decorators/confirmed.decorator'
 
 @Controller('security')
 export class SecurityController {
@@ -92,6 +93,7 @@ export class SecurityController {
 	@UsePipes(new ValidationPipe())
 	@Post('change-email')
 	@Throttle({ default: { limit: 2, ttl: 10000 } })
+	@Confirmed()
 	@Auth()
 	async changeEmail(
 		@CurrentUser('id') id: string,

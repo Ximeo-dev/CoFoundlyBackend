@@ -1,5 +1,4 @@
-import { Industry, Language, Skill, UserProfile } from '@prisma/client'
-import { Entity } from 'src/entities/types/entity.types'
+import { Industry, Job, Language, Skill, UserProfile } from '@prisma/client'
 
 export type UserProfileExtended = {
 	skills: Skill[]
@@ -12,10 +11,10 @@ export type UserFullProfileExtended = {
 		username: string
 		displayUsername: string
 	}
-	job: Entity | null
-	skills: Entity[]
-	languages: Entity[]
-	industries: Entity[]
+	job: Job | null
+	skills: Skill[]
+	languages: Language[]
+	industries: Industry[]
 } & UserProfile
 
 export type OneToManyType = 'job' | 'projectRole' | 'industry'
