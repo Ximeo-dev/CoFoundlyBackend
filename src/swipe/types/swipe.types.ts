@@ -1,14 +1,18 @@
 import { Industry, Language, Skill } from '@prisma/client'
 
-export enum SwipeIntent {
-	COMPLEMENT = 'complement',
-	SIMILAR = 'similar',
-}
+export const SwipeIntent = {
+	COMPLEMENT: 'complement',
+	SIMILAR: 'similar',
+} as const
 
-export enum SwipeAction {
-	LIKE = 'like',
-	SKIP = 'skip',
-}
+export type SwipeIntent = (typeof SwipeIntent)[keyof typeof SwipeIntent]
+
+export const SwipeAction = {
+	LIKE: 'like',
+	SKIP: 'skip',
+} as const
+
+export type SwipeAction = (typeof SwipeAction)[keyof typeof SwipeAction]
 
 export interface Candidate {
 	id: number
