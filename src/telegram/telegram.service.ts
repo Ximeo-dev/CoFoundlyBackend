@@ -5,7 +5,8 @@ import { Bot, Context } from 'grammy'
 import { TwoFactorService } from 'src/security/two-factor.service'
 import {
 	TwoFactorAction,
-	TwoFactorActionStatusEnum,
+	TwoFactorActionStatus,
+	TwoFactorFinalActionStatuses,
 	TwoFactorHandleResult,
 } from 'src/security/types/two-factor.types'
 import { UserWithSecurity } from 'src/user/types/user.types'
@@ -38,7 +39,11 @@ export class TelegramService {
 			})
 	}
 
-	public get2FAKey(userId: string, action: string, type: 'confirm' | 'reject') {
+	public get2FAKey(
+		userId: string,
+		action: string,
+		type: TwoFactorFinalActionStatuses,
+	) {
 		return `2fa:${action}:${type}:${userId}`
 	}
 
@@ -48,11 +53,19 @@ export class TelegramService {
 				[
 					{
 						text: '✅ Подтвердить',
-						callback_data: this.get2FAKey(userId, action, 'confirm'),
+						callback_data: this.get2FAKey(
+							userId,
+							action,
+							TwoFactorActionStatus.CONFIRMED,
+						),
 					},
 					{
 						text: '❌ Отклонить',
-						callback_data: this.get2FAKey(userId, action, 'reject'),
+						callback_data: this.get2FAKey(
+							userId,
+							action,
+							TwoFactorActionStatus.REJECTED,
+						),
 					},
 				],
 			],
@@ -65,7 +78,7 @@ export class TelegramService {
 		telegramId: string,
 		ip: string,
 	) {
-		const actionText = getActionText(action, 'pending', {
+		const actionText = getActionText(action, TwoFactorActionStatus.PENDING, {
 			email: user.email,
 			displayUsername: user.displayUsername,
 			ip,
@@ -93,16 +106,16 @@ export class TelegramService {
 
 		const { result, user } = await this.twoFactorService.handleBindToken(token)
 
-		if (result != TwoFactorHandleResult.Success)
+		if (result !== TwoFactorHandleResult.Success)
 			return ctx.reply(getErrorText(result, {}))
 
 		if (!user)
 			return ctx.reply(getErrorText(TwoFactorHandleResult.UserNotFound, {}))
 		return ctx.reply(
-			getActionText(TwoFactorAction.BIND, 'pending', {
+			getActionText(TwoFactorAction.BIND, TwoFactorActionStatus.PENDING, {
 				username: ctx.from.username ?? ctx.from.id,
 				email: user.email,
-				displayUsername: user.displayUsername
+				displayUsername: user.displayUsername,
 			}),
 			{
 				reply_markup: this.create2FAKeyboard(user.id, TwoFactorAction.BIND),
@@ -117,46 +130,52 @@ export class TelegramService {
 			telegramId,
 		)
 
-		if (result != TwoFactorHandleResult.Success)
+		if (result !== TwoFactorHandleResult.Success)
 			return ctx.editMessageText(getErrorText(result, {}))
 
 		await ctx.answerCallbackQuery({ text: '✅ Привязка успешно завершена' })
 		return ctx.editMessageText(
-			getActionText(TwoFactorAction.BIND, 'confirmed', {}),
+			getActionText(TwoFactorAction.BIND, TwoFactorActionStatus.CONFIRMED, {}),
 		)
 	}
 
 	async handleTelegramUnbind(
 		userId: string,
 		ctx: Context,
-		type:
-			| TwoFactorActionStatusEnum.CONFIRMED
-			| TwoFactorActionStatusEnum.REJECTED,
+		type: TwoFactorFinalActionStatuses,
 	) {
-		if (type == TwoFactorActionStatusEnum.REJECTED) {
+		if (type === TwoFactorActionStatus.REJECTED) {
 			await this.twoFactorService.confirmAction(
 				userId,
 				TwoFactorAction.UNBIND,
-				TwoFactorActionStatusEnum.REJECTED,
+				TwoFactorActionStatus.REJECTED,
 			)
 			return ctx.editMessageText(
-				getActionText(TwoFactorAction.UNBIND, 'rejected', {}),
+				getActionText(
+					TwoFactorAction.UNBIND,
+					TwoFactorActionStatus.REJECTED,
+					{},
+				),
 			)
 		}
 
 		const result = await this.twoFactorService.handleUnbind2FA(userId)
 
-		if (result != TwoFactorHandleResult.Success)
+		if (result !== TwoFactorHandleResult.Success)
 			return ctx.editMessageText(getErrorText(result, {}))
 
 		await this.twoFactorService.confirmAction(
 			userId,
 			TwoFactorAction.UNBIND,
-			TwoFactorActionStatusEnum.CONFIRMED,
+			TwoFactorActionStatus.CONFIRMED,
 		)
 		await ctx.answerCallbackQuery({ text: '⚠️ 2FA отключена' })
 		return ctx.editMessageText(
-			getActionText(TwoFactorAction.UNBIND, 'confirmed', {}),
+			getActionText(
+				TwoFactorAction.UNBIND,
+				TwoFactorActionStatus.CONFIRMED,
+				{},
+			),
 		)
 	}
 
@@ -164,9 +183,7 @@ export class TelegramService {
 		ctx: Context,
 		userId: string,
 		action: TwoFactorAction,
-		type:
-			| TwoFactorActionStatusEnum.CONFIRMED
-			| TwoFactorActionStatusEnum.REJECTED,
+		type: TwoFactorFinalActionStatuses,
 	) {
 		await this.twoFactorService.confirmAction(userId, action, type)
 		return ctx.editMessageText(getActionText(action, type, {}))

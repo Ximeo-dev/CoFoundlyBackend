@@ -1,13 +1,14 @@
 import { CallbackQuery, Command, Start, Update } from '@grammyjs/nestjs'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { Bot, CallbackQueryContext, Context } from 'grammy'
+import { CallbackQueryContext, Context } from 'grammy'
 import { TelegramService } from './telegram.service'
 import { parseCommandArgs } from 'src/utils/parse-command-args'
 import { getActionText } from './action-texts'
 import {
 	TwoFactorAction,
-	TwoFactorActionStatusEnum,
+	TwoFactorActionStatus,
+	TwoFactorFinalActionStatuses,
 } from 'src/security/types/two-factor.types'
 
 @Update()
@@ -67,88 +68,36 @@ export class TelegramUpdate {
 		return this.telegramService.handleTelegramBindCommand(ctx, token)
 	}
 
-	@CallbackQuery(/^2fa:bind:confirm:(.+)$/)
-	async onConfirmBind2FA(ctx: CallbackQueryContext<Context>) {
-		const userId = ctx.match[1]
-		const telegramId = ctx.from.id.toString()
+	@CallbackQuery(
+		/^2fa:(bind|unbind|delete-project|delete-profile):(confirmed|rejected):(.+)$/,
+	)
+	async onTwoFactorCallback(ctx: CallbackQueryContext<Context>) {
+		const [action, status, userId] = ctx.match.slice(1) as [
+			TwoFactorAction,
+			TwoFactorFinalActionStatuses,
+			string,
+		]
 
-		await this.telegramService.confirmTelegramBind(userId, telegramId, ctx)
-	}
+		if (!action || !status) {
+			return ctx.answerCallbackQuery({
+				text: 'Неверный формат действия.',
+				show_alert: true,
+			})
+		}
 
-	@CallbackQuery(/^2fa:bind:reject:(.+)$/)
-	async onRejectBind2FA(ctx: CallbackQueryContext<Context>) {
-		await ctx.editMessageText(
-			getActionText(TwoFactorAction.BIND, 'rejected', {}),
-		)
-	}
+		if (action === TwoFactorAction.BIND) {
+			if (status === TwoFactorActionStatus.REJECTED) {
+				return ctx.editMessageText(getActionText(action, status, {}))
+			}
 
-	@CallbackQuery(/^2fa:unbind:confirm:(.+)$/)
-	async onConfirmUnbind2FA(ctx: CallbackQueryContext<Context>) {
-		const userId = ctx.match[1]
+			const telegramId = ctx.from.id.toString()
+			return this.telegramService.confirmTelegramBind(userId, telegramId, ctx)
+		}
 
-		await this.telegramService.handleTelegramUnbind(
-			userId,
-			ctx,
-			TwoFactorActionStatusEnum.CONFIRMED,
-		)
-	}
+		if (action === TwoFactorAction.UNBIND) {
+			return this.telegramService.handleTelegramUnbind(userId, ctx, status)
+		}
 
-	@CallbackQuery(/^2fa:unbind:reject:(.+)$/)
-	async onRejectUnbind2FA(ctx: CallbackQueryContext<Context>) {
-		const userId = ctx.match[1]
-
-		await this.telegramService.handleTelegramUnbind(
-			userId,
-			ctx,
-			TwoFactorActionStatusEnum.REJECTED,
-		)
-	}
-
-	@CallbackQuery(/^2fa:delete-project:confirm:(.+)$/)
-	async onConfirmDeleteProject(ctx: CallbackQueryContext<Context>) {
-		const userId = ctx.match[1]
-
-		await this.telegramService.handleAction(
-			ctx,
-			userId,
-			TwoFactorAction.DELETE_PROJECT,
-			TwoFactorActionStatusEnum.CONFIRMED,
-		)
-	}
-
-	@CallbackQuery(/^2fa:delete-project:reject:(.+)$/)
-	async onRejectDeleteProject(ctx: CallbackQueryContext<Context>) {
-		const userId = ctx.match[1]
-
-		await this.telegramService.handleAction(
-			ctx,
-			userId,
-			TwoFactorAction.DELETE_PROJECT,
-			TwoFactorActionStatusEnum.REJECTED,
-		)
-	}
-
-	@CallbackQuery(/^2fa:delete-profile:confirm:(.+)$/)
-	async onConfirmDeleteProfile(ctx: CallbackQueryContext<Context>) {
-		const userId = ctx.match[1]
-
-		await this.telegramService.handleAction(
-			ctx,
-			userId,
-			TwoFactorAction.DELETE_PROFILE,
-			TwoFactorActionStatusEnum.CONFIRMED,
-		)
-	}
-
-	@CallbackQuery(/^2fa:delete-profile:reject:(.+)$/)
-	async onRejectDeleteProfile(ctx: CallbackQueryContext<Context>) {
-		const userId = ctx.match[1]
-
-		await this.telegramService.handleAction(
-			ctx,
-			userId,
-			TwoFactorAction.DELETE_PROFILE,
-			TwoFactorActionStatusEnum.REJECTED,
-		)
+		return this.telegramService.handleAction(ctx, userId, action, status)
 	}
 }

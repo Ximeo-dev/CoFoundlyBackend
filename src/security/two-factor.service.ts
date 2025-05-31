@@ -13,7 +13,7 @@ import { TelegramService } from 'src/telegram/telegram.service'
 import {
 	TwoFactorAction,
 	TwoFactorActionStatus,
-	TwoFactorActionStatusEnum,
+	TwoFactorFinalActionStatuses,
 	TwoFactorHandleResult,
 } from 'src/security/types/two-factor.types'
 import { hasSecuritySettings } from 'src/user/types/user.guards'
@@ -113,7 +113,7 @@ export class TwoFactorService {
 
 		const key = this.action2FAKey(userId, action)
 		const ttl = TTL_BY_2FA_ACTION[action] ?? 60
-		await this.redis.set(key, TwoFactorActionStatusEnum.PENDING, ttl)
+		await this.redis.set(key, TwoFactorActionStatus.PENDING, ttl)
 
 		await this.telegramService.send2FAConfirmation(
 			user,
@@ -128,20 +128,18 @@ export class TwoFactorService {
 	async confirmAction(
 		userId: string,
 		action: TwoFactorAction,
-		type:
-			| TwoFactorActionStatusEnum.CONFIRMED
-			| TwoFactorActionStatusEnum.REJECTED,
+		type: TwoFactorFinalActionStatuses,
 	) {
 		const key = this.action2FAKey(userId, action)
 
 		const status = await this.redis.get(key)
-		if (status !== TwoFactorActionStatusEnum.PENDING) {
+		if (status !== TwoFactorActionStatus.PENDING) {
 			return false
 		}
 
 		await this.redis.set(key, type, 30)
 
-		if (type === TwoFactorActionStatusEnum.CONFIRMED) {
+		if (type === TwoFactorActionStatus.CONFIRMED) {
 			await this.redis.set(
 				this.action2FAConfirmedKey(userId, action),
 				'1',
@@ -157,7 +155,7 @@ export class TwoFactorService {
 
 		const status = await this.redis.get(key)
 		if (!status) {
-			return TwoFactorActionStatusEnum.EXPIRED
+			return TwoFactorActionStatus.EXPIRED
 		}
 
 		return status as TwoFactorActionStatus
@@ -215,7 +213,7 @@ export class TwoFactorService {
 		const key = this.action2FAKey(userId, TwoFactorAction.UNBIND)
 		const status = await this.redis.get(key)
 
-		if (status !== TwoFactorActionStatusEnum.PENDING)
+		if (status !== TwoFactorActionStatus.PENDING)
 			return TwoFactorHandleResult.TokenExpired
 
 		return this.unbind2FA(userId)
