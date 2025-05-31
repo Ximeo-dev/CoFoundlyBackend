@@ -41,13 +41,13 @@ export class TelegramService {
 
 	public get2FAKey(
 		userId: string,
-		action: string,
+		action: TwoFactorAction,
 		type: TwoFactorFinalActionStatuses,
 	) {
 		return `2fa:${action}:${type}:${userId}`
 	}
 
-	private create2FAKeyboard(userId: string, action: string) {
+	private create2FAKeyboard(userId: string, action: TwoFactorAction) {
 		return {
 			inline_keyboard: [
 				[

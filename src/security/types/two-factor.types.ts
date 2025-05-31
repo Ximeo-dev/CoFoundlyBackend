@@ -2,9 +2,9 @@ export const TwoFactorAction = {
 	BIND: 'bind',
 	UNBIND: 'unbind',
 	RESET_PASSWORD: 'reset-password',
-	DELETE_ACCOUNT: 'delete-account',
-	DELETE_PROFILE: 'delete-profile',
-	DELETE_PROJECT: 'delete-project',
+	DELETE_ACCOUNT: 'del-account',
+	DELETE_PROFILE: 'del-profile',
+	DELETE_PROJECT: 'del-project',
 } as const
 
 export type TwoFactorAction =

@@ -69,7 +69,7 @@ export class TelegramUpdate {
 	}
 
 	@CallbackQuery(
-		/^2fa:(bind|unbind|delete-project|delete-profile):(confirmed|rejected):(.+)$/,
+		/^2fa:(bind|unbind|del-project|del-profile):(confirmed|rejected):(.+)$/,
 	)
 	async onTwoFactorCallback(ctx: CallbackQueryContext<Context>) {
 		const [action, status, userId] = ctx.match.slice(1) as [
