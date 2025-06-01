@@ -163,12 +163,20 @@ export class SwipeService {
 			})
 
 			if (reverseSwipe) {
-				await this.prisma.match.create({
-					data: {
-						profileAId: fromProfile.id,
-						profileBId: toProfile.id,
-					},
+				const [profileAId, profileBId] =
+					fromProfile.id < toProfile.id
+						? [fromProfile.id, toProfile.id]
+						: [toProfile.id, fromProfile.id]
+
+				const existingMatch = await this.prisma.match.findFirst({
+					where: { profileAId, profileBId },
 				})
+
+				if (!existingMatch) {
+					await this.prisma.match.create({
+						data: { profileAId, profileBId },
+					})
+				}
 
 				const participantIds = [fromUserId, toUserId]
 				const chat = await this.chatService.createChat(
