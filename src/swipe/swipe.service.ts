@@ -29,6 +29,47 @@ export class SwipeService {
 
 		if (!currentUser) throw new NotFoundException('User profile not found')
 
+		if (intent === SwipeIntent.LIKED) {
+			const candidate = await this.prisma.userProfile.findFirst({
+				where: {
+					userId: {
+						not: currentUserId,
+					},
+					performedSwipes: {
+						some: {
+							toProfileId: currentUser.id,
+							isLiked: true,
+						},
+					},
+					NOT: {
+						OR: [
+							{
+								MatchesAsA: {
+									some: {
+										profileBId: currentUser.id,
+									},
+								},
+							},
+							{
+								MatchesAsB: {
+									some: {
+										profileAId: currentUser.id,
+									},
+								},
+							},
+						],
+					},
+				},
+				select: {
+					userId: true,
+				},
+			})
+
+			if (!candidate) return
+
+			return this.userProfileService.getForeignUserProfile(candidate.userId)
+		}
+
 		const candidates = await this.prisma.userProfile.findMany({
 			where: {
 				userId: {
@@ -122,6 +163,13 @@ export class SwipeService {
 			})
 
 			if (reverseSwipe) {
+				await this.prisma.match.create({
+					data: {
+						profileAId: fromProfile.id,
+						profileBId: toProfile.id,
+					},
+				})
+
 				const participantIds = [fromUserId, toUserId]
 				const chat = await this.chatService.createChat(
 					participantIds,
