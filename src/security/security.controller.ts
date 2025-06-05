@@ -28,7 +28,7 @@ import {
 	ApiOperation,
 	ApiResponse,
 } from '@nestjs/swagger'
-import { FRONTEND_REDIRECT_LINK } from 'src/constants/constants'
+import { FRONTEND_DIRECT_LINK } from 'src/constants/constants'
 import { Throttle } from '@nestjs/throttler'
 import { Confirmed } from './decorators/confirmed.decorator'
 
@@ -73,7 +73,7 @@ export class SecurityController {
 		@Res({ passthrough: true }) res: Response,
 	) {
 		await this.securityService.confirmEmailWithToken(userId, token)
-		return res.redirect(FRONTEND_REDIRECT_LINK)
+		return res.redirect(FRONTEND_DIRECT_LINK)
 	}
 
 	@ApiOperation({ summary: 'Send change email confirmation message' })
@@ -118,7 +118,7 @@ export class SecurityController {
 		@Res({ passthrough: true }) res: Response,
 	) {
 		await this.securityService.confirmChangeEmail(userId, token)
-		return res.redirect(FRONTEND_REDIRECT_LINK)
+		return res.redirect(FRONTEND_DIRECT_LINK)
 	}
 
 	@ApiOperation({ summary: 'Send reset password confirmation message' })
