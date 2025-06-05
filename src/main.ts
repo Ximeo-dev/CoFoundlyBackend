@@ -13,7 +13,7 @@ import { SecurityModule } from './security/security.module'
 import { WebsocketModule } from './ws/websocket.module'
 import { SwipeModule } from './swipe/swipe.module'
 import { ConfigService } from '@nestjs/config'
-import { CORS_ORIGIN_LIST } from './constants/constants'
+import { API_DIRECT_LINK, CORS_ORIGIN_LIST } from './constants/constants'
 import helmet from 'helmet'
 
 async function bootstrap() {
@@ -54,8 +54,8 @@ async function bootstrap() {
 					imgSrc: ["'self'", 'data:', 'blob:'],
 					connectSrc: [
 						"'self'",
-						`wss://${config.get('API_URL')}`,
-						`https://${config.get('API_URL')}`,
+						`wss://${config.getOrThrow<string>('API_DOMAIN')}`,
+						API_DIRECT_LINK,
 					],
 					frameAncestors: ["'none'"],
 					objectSrc: ["'none'"],
