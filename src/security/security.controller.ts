@@ -118,7 +118,17 @@ export class SecurityController {
 		@Res({ passthrough: true }) res: Response,
 	) {
 		await this.securityService.confirmChangeEmail(userId, token)
-		return res.redirect(FRONTEND_DIRECT_LINK)
+		res.status(200).send(`
+    <html>
+      <head>
+        <meta http-equiv="refresh" content="0; url=${FRONTEND_DIRECT_LINK}" />
+        <title>Redirecting...</title>
+      </head>
+      <body>
+        <p>Redirecting to <a href="${FRONTEND_DIRECT_LINK}">your profile</a>...</p>
+      </body>
+    </html>
+  `)
 	}
 
 	@ApiOperation({ summary: 'Send reset password confirmation message' })
