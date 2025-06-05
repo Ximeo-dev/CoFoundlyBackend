@@ -9,7 +9,7 @@ import { randomBytes } from 'crypto'
 import { compile } from 'handlebars'
 import { AuthService } from 'src/auth/auth.service'
 import {
-	API_URL,
+	API_DIRECT_LINK,
 	FRONTEND_RESET_PASSWORD,
 	MAIL_MESSAGES_FILE_PATHS,
 	TTL_BY_SECURITY_ACTION,
@@ -127,7 +127,7 @@ export class SecurityService {
 			userId,
 			SecurityAction.CONFIRM_EMAIL,
 		)
-		const confirmationUrl = `${API_URL}/security/confirm-email?userId=${userId}&token=${token}`
+		const confirmationUrl = `${API_DIRECT_LINK}/security/confirm-email?userId=${userId}&token=${token}`
 
 		const context = { confirmationUrl }
 		const template = await getHtmlTemplate(
@@ -226,7 +226,7 @@ export class SecurityService {
 			throw new BadRequestException('Пользователь с таким email уже существует')
 
 		const token = await this.issueChangeEmailToken(dto.newEmail)
-		const confirmationUrl = `${API_URL}/security/change-email/confirm?userId=${userId}&token=${token}`
+		const confirmationUrl = `${API_DIRECT_LINK}/security/change-email/confirm?userId=${userId}&token=${token}`
 
 		const context = {
 			displayUsername: userData.displayUsername,

@@ -52,12 +52,8 @@ export const SWIPE_SCORE_WEIGHTS = {
 
 export const SCORE_BOOST_FOR_LIKED_ME = 0.2
 
-export const CORS_ORIGIN_LIST = [
-	'http://localhost:3000',
-	'https://cofoundly.infinitum.su',
-]
+export const FRONTEND_DIRECT_LINK = `https://${getEnvVar('DOMAIN')}`
+export const FRONTEND_RESET_PASSWORD = `${FRONTEND_DIRECT_LINK}/reset-password/confirm`
+export const API_DIRECT_LINK = `https://${getEnvVar('API_DOMAIN')}`
 
-export const FRONTEND_REDIRECT_LINK = `http://${getEnvVar('FRONTEND_URL')}`
-export const FRONTEND_RESET_PASSWORD = `${FRONTEND_REDIRECT_LINK}/reset-password/confirm`
-
-export const API_URL = `http://${getEnvVar('API_URL')}`
+export const CORS_ORIGIN_LIST = ['http://localhost:3000', FRONTEND_DIRECT_LINK]

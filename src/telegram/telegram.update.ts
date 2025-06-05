@@ -10,6 +10,7 @@ import {
 	TwoFactorActionStatus,
 	TwoFactorFinalActionStatuses,
 } from 'src/security/types/two-factor.types'
+import { FRONTEND_DIRECT_LINK } from 'src/constants/constants'
 
 @Update()
 @Injectable()
@@ -34,10 +35,6 @@ export class TelegramUpdate {
 		} else if (payload) {
 			await ctx.reply(`⚠️ Неизвестный параметр: ${payload}`)
 		} else {
-			const web_app_url = this.configService.get<string>('FRONTEND_URL')
-			if (!web_app_url) {
-				return await ctx.reply(`👋 Привет! Это телеграм бот CoFoundly`)
-			}
 			await ctx.reply(`👋 Привет! Это телеграм бот CoFoundly`, {
 				reply_markup: {
 					inline_keyboard: [
@@ -45,7 +42,7 @@ export class TelegramUpdate {
 							{
 								text: 'Запустить CoFoundly',
 								web_app: {
-									url: `https://${web_app_url}`,
+									url: FRONTEND_DIRECT_LINK,
 								},
 							},
 						],
